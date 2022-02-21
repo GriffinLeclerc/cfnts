@@ -39,7 +39,12 @@ fn wait_for_req_or_eof(dest: &net::TcpStream, logger: slog::Logger) -> Result<()
                 logger,
                 "failure to read request {:?}, unable to serve metrics", e
             );
-            dest.shutdown(net::Shutdown::Both);
+            if let Err(e) = dest.shutdown(net::Shutdown::Both) {
+                error!(
+                    logger,
+                    "TcpStream shutdown failed with error: {:?}, unable to serve metrics", e
+                );
+            }
             return Err(e);
         }
         if let Ok(0) = res {
@@ -88,8 +93,14 @@ pub fn run_metrics(conf: MetricsConfig, logger: &slog::Logger) -> Result<(), std
         match stream {
             Ok(conn) => {
                 let log_metrics = logger.new(slog::o!("component"=>"serve_metrics"));
+                let t_log = logger.clone();
                 thread::spawn(move || {
-                    serve_metrics(conn, log_metrics);
+                    if let Err(e) = serve_metrics(conn, log_metrics) {
+                        error!(
+                            t_log,
+                            "Unable to serve metrics: {:?}", e
+                        )
+                    }
                 });
             }
             Err(err) => return Err(err),

@@ -11,7 +11,10 @@ Rust
 
 We use cargo to build the software. `docker-compose up` will spawn several Docker containers that run tests.
 
+`cargo build --release` will generate the necessary materials for running.
+
 **Running**
+
 Run the NTS client using `./target/release/cfnts client [--4 | --6] [-p <server-port>] [-c <trusted-cert>] [-n <other name>]  <server-hostname>`
 
 Default port is `4460`. 
