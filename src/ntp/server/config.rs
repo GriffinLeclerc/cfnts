@@ -17,7 +17,7 @@ use crate::metrics::MetricsConfig;
 
 fn get_metrics_config(settings: &config::Config) -> Option<MetricsConfig> {
     let mut metrics = None;
-    if let Ok(addr) = settings.get_str("metrics_addr") {
+    if let Ok(addr) = settings.get_string("metrics_addr") {
         if let Ok(port) = settings.get_int("metrics_port") {
             metrics = Some(MetricsConfig {
                 port: port as u16,
@@ -117,10 +117,10 @@ impl NtpServerConfig {
     // Returning a `Message` object here is not a good practice. I will figure out a good practice
     // later.
     pub fn parse(filename: &str) -> Result<NtpServerConfig, config::ConfigError> {
-        let mut settings = config::Config::new();
-        settings.merge(config::File::with_name(filename))?;
+        let settings = config::Config::builder()
+            .add_source(config::File::with_name(filename)).build().expect("Unable to build ntp server config.");
 
-        let memcached_url = settings.get_str("memc_url")?;
+        let memcached_url = settings.get_string("memc_url")?;
 
         // Resolves metrics configuration.
         let metrics_config = get_metrics_config(&settings);
@@ -151,7 +151,7 @@ impl NtpServerConfig {
             },
         };
 
-        let upstream_addr = match settings.get_str("upstream_addr") {
+        let upstream_addr = match settings.get_string("upstream_addr") {
             // If it's a not-found error, we can just leave it empty.
             Err(config::ConfigError::NotFound(_)) => None,
 
@@ -178,7 +178,7 @@ impl NtpServerConfig {
         // Note that all of the file reading stuffs should be at the end of the function so that
         // all the not-file-related stuffs can fail fast.
 
-        let cookie_key_filename = settings.get_str("cookie_key_file")?;
+        let cookie_key_filename = settings.get_string("cookie_key_file")?;
         let cookie_key = CookieKey::parse(&cookie_key_filename).wrap_err()?;
 
         let mut config = NtpServerConfig::new(

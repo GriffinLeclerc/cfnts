@@ -20,7 +20,7 @@ use crate::metrics::MetricsConfig;
 
 fn get_metrics_config(settings: &config::Config) -> Option<MetricsConfig> {
     let mut metrics = None;
-    if let Ok(addr) = settings.get_str("metrics_addr") {
+    if let Ok(addr) = settings.get_string("metrics_addr") {
         if let Ok(port) = settings.get_int("metrics_port") {
             metrics = Some(MetricsConfig {
                 port: port as u16,
@@ -232,8 +232,8 @@ impl KeServerConfig {
     // Returning a `Message` object here is not a good practice. I will figure out a good practice
     // later.
     pub fn parse(filename: &str) -> Result<KeServerConfig, config::ConfigError> {
-        let mut settings = config::Config::new();
-        settings.merge(config::File::with_name(filename))?;
+        let settings = config::Config::builder()
+            .add_source(config::File::with_name(filename)).build().expect("Unable to build key establishment server config.");
 
         // XXX: The code of parsing a next port here is quite ugly due to the `get_int` interface.
         // Please don't be surprised :)
@@ -248,7 +248,7 @@ impl KeServerConfig {
                 ));
             },
         };
-        let memcached_url = settings.get_str("memc_url")?;
+        let memcached_url = settings.get_string("memc_url")?;
 
         // XXX: The code of parsing a connection timeout here is quite ugly due to the `get_int`
         // interface. Please don't be surprised :)
@@ -285,10 +285,10 @@ impl KeServerConfig {
 
         // All config filenames must be given with relative paths to where the server is run.
         // Otherwise, cfnts will try to open the file while in the incorrect directory.
-        let certs_filename = settings.get_str("tls_cert_file")?;
-        let secret_keys_filename = settings.get_str("tls_key_file")?;
+        let certs_filename = settings.get_string("tls_cert_file")?;
+        let secret_keys_filename = settings.get_string("tls_key_file")?;
 
-        let cookie_key_filename = settings.get_str("cookie_key_file")?;
+        let cookie_key_filename = settings.get_string("cookie_key_file")?;
         let cookie_key = CookieKey::parse(&cookie_key_filename).wrap_err()?;
 
         let mut config = KeServerConfig::new(
