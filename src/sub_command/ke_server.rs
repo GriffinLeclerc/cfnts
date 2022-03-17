@@ -5,6 +5,7 @@
 //! The ke-server subcommand.
 
 use std::process;
+use slog::error;
 
 use crate::nts_ke::server::{KeServerConfig, KeServer};
 
@@ -49,6 +50,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             // Disable the log for now because the Error trait is not implemented for
             // RotateError yet.
             // eprintln!("starting NTS-KE server failed: {}", error);
+            error!(global_logger, "Unable to communicate with the Memcached server."); // FIXME something is better than nothing
             process::exit(1);
         }
     };

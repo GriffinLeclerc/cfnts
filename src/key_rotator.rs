@@ -156,6 +156,7 @@ impl KeyRotator {
                     // Disable the log for now because the Error trait is not implemented for
                     // RotateError yet.
                     // error!(rotator.logger, "failure to initialize key rotation: {}", error);
+                    error!(rotator.logger, "Encountered an error when rotating keys."); // FIXME something is better than nothing
 
                     // If it already tried a lot of times already, it may be a time to give up.
                     if try_number == maximum_try {
@@ -185,6 +186,7 @@ impl KeyRotator {
     /// server doesn't contain a key id it supposed to contain.
     ///
     pub fn rotate(&mut self) -> Result<(), RotateError> {
+        info!(self.logger, "rotating keys");
         // Side-effect. It's not related to the operation.
         ROTATION_COUNTER.inc();
 
@@ -287,6 +289,7 @@ fn read_sleep(rotor: &Arc<RwLock<KeyRotator>>) -> u64 {
 // ------------------------------------------------------------------------
 
 #[cfg(test)] use ::memcache::MemcacheError;
+use slog::{error, info};
 #[cfg(test)] use test::memcache;
 #[cfg(test)] use test::SystemTime;
 

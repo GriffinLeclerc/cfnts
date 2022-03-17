@@ -1,6 +1,6 @@
 [package]
 name        = "cfnts"
-version     = "2019.6.0"
+version     = "2022.3.1"
 authors = [
     "Watson Ladd <watson@cloudflare.com>",
     "Gabbi Fisher <gabbi@cloudflare.com>",

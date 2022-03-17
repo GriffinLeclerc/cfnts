@@ -33,7 +33,7 @@ fn create_logger<'a>(matches: &clap::ArgMatches<'a>) -> slog::Logger {
     // Default severity level is info.
     builder.level(Severity::Info);
     // Write all logs to stderr.
-    builder.destination(Destination::Stderr);
+    builder.destination(Destination::Stdout); // FIXME write to stdErr
 
     // If in debug mode, change severity level to debug.
     if matches.is_present("debug") {

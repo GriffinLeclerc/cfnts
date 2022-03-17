@@ -1,9 +1,15 @@
 addr:
-  - "[::]:4460"
+  - "132.177.116.173:4460"
+
+# TLS and NTS Cooke file locations
 tls_key_file: tests/tls-pkcs8.pem
 tls_cert_file: tests/chain.pem # Expect PEM.
 cookie_key_file: tests/cookie.key # TODO: store and read as pem files, or read bytes directly from file?
-memc_url: memcache://memcache:11211
+
+# URL of the memecached server:portNum
+memc_url: memcache://localhost:11211
+
 next_port: 123
-metrics_addr: server
+
+metrics_addr: 132.177.116.173
 metrics_port: 8001

@@ -37,7 +37,7 @@ pub(super) struct KeServerState {
 
 /// NTS-KE server instance.
 pub struct KeServer {
-    /// State shared among listerners.
+    /// State shared among listeners.
     // We use `Arc` so that all the KeServerListener's can reference back to this object.
     state: Arc<KeServerState>,
 
