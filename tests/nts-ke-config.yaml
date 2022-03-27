@@ -6,7 +6,7 @@ tls_key_file: tests/tls-pkcs8.pem
 tls_cert_file: tests/chain.pem # Expect PEM.
 cookie_key_file: tests/cookie.key # TODO: store and read as pem files, or read bytes directly from file?
 
-# URL of the memecached server:portNum
+# URL of the memcached server:portNum
 memc_url: memcache://localhost:11211
 
 next_port: 123

@@ -9,6 +9,7 @@ use slog::debug;
 use std::fs;
 use std::io::BufReader;
 use std::process;
+use log::info;
 
 use rustls::{
     internal::pemfile::certs,
@@ -28,6 +29,7 @@ pub struct ClientConfig {
 }
 
 pub fn load_tls_certs(path: String) -> Result<Vec<Certificate>, config::ConfigError> {
+    info!("loading tls certificates from {}", path);
     certs(&mut BufReader::new(fs::File::open(&path).wrap_err()?))
         .map_err(|()| config::ConfigError::Message(
             format!("could not load certificate from {}", &path)
@@ -64,8 +66,13 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let mut trusted_cert = None;
     if let Some(file) = cert_file {
+        info!("Some cert file");
         if let Ok(certs) = load_tls_certs(file) {
+            info!("Trusted cert assigned");
             trusted_cert = Some(certs[0].clone());
+        }
+        else {
+            info!("No trusted cert");
         }
     }
 
