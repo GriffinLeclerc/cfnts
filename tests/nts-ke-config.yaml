@@ -11,5 +11,5 @@ memc_url: memcache://localhost:11211
 
 next_port: 123
 
-metrics_addr: 132.177.116.173
+metrics_addr: localhost
 metrics_port: 8001

@@ -43,6 +43,8 @@ Run the following commands as root.
 2. `./target/release/cfnts ntp-server -f tests/ntp-upstream-config.yaml`
 3. `./target/release/cfnts ntp-server -f tests/ntp-config.yaml`
 
+In addition, edit the `tests/nts-ke-config.yaml` and change the `addr` field to `server-ip-address:4460`.
+
 For debugging information, prepend each of these commands with `RUST_BACKTRACE=1 `
 
 NTS Client:

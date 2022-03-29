@@ -9,7 +9,6 @@ use slog::debug;
 use std::fs;
 use std::io::BufReader;
 use std::process;
-use log::info;
 
 use rustls::{
     internal::pemfile::certs,
