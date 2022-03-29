@@ -1,6 +1,8 @@
 {
     "CN": "localhost",
     "hosts": [
+	    "doctor",
+	    "doctor.iol.unh.edu",
         "server",
         "localhost",
         "bogus.com",
@@ -15,7 +17,7 @@
             "C": "US",
             "ST": "CA",
             "L": "San Francisco",
-            "O": "Cloudflare test",
+            "O": "UNH test",
             "OU": "Crypto team"
         }
     ]

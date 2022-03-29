@@ -74,7 +74,6 @@ pub fn run_nts_ke_client(
             tls_config.root_store.add(&cert)?;
         }
         None => {
-            info!(logger, "Using TLS_SERVER_ROOTS");
             tls_config
                 .root_store
                 .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);

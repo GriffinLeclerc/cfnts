@@ -6,10 +6,10 @@
   "names": [
     {
       "C": "US",
-      "L": "San Francisco",
-      "ST": "California",
-      "O": "HappyCert, Inc.",
-      "OU": "HappyCert Intermediate"
+      "L": "Durham",
+      "ST": "New Hampshire",
+      "O": "Intermediate, Inc.",
+      "OU": "Intermediate Cert"
     }
   ],
   "cn": "(dev use only)"
