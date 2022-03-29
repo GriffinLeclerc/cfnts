@@ -39,9 +39,11 @@ out the key exchange.
 
 NTS Sever:
 Run the following commands as root.
-1. `./target/release/cfnts ke-server -f tests/nts-ke-config.yaml`
-2. `./target/release/cfnts ntp-server -f tests/ntp-upstream-config.yaml`
-3. `./target/release/cfnts ntp-server -f tests/ntp-config.yaml`
+1. `memecached`
+2. `python3 scripts/fill-memcached.py`
+3`./target/release/cfnts ke-server -f tests/nts-ke-config.yaml`
+4`./target/release/cfnts ntp-server -f tests/ntp-upstream-config.yaml`
+5`./target/release/cfnts ntp-server -f tests/ntp-config.yaml`
 
 In addition, edit the `tests/nts-ke-config.yaml` and change the `addr` field to `server-ip-address:4460`.
 

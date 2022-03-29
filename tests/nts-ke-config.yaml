@@ -1,5 +1,5 @@
 addr:
-  - "132.177.116.173:4460"
+  - "132.177.116.174:4460"
 
 # TLS and NTS Cooke file locations
 tls_key_file: tests/tls-pkcs8.pem

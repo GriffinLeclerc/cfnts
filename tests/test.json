@@ -3,6 +3,8 @@
     "hosts": [
 	    "doctor",
 	    "doctor.iol.unh.edu",
+        "nts-server",
+        "nts-server.iol.unh.edu",
         "server",
         "localhost",
         "bogus.com",
