@@ -262,6 +262,7 @@ dependencies = [
  "slog-scope",
  "slog-stdlog 4.0.0",
  "sloggers",
+ "time",
  "webpki",
  "webpki-roots",
 ]

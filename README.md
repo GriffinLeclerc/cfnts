@@ -11,7 +11,7 @@ Rust
 
 We use cargo to build the software. `docker-compose up` will spawn several Docker containers that run tests.
 
-`cargo build --release` will generate the necessary materials for running.
+`cargo build --release` will generate the necessary materials for running both the client and the server.
 
 **Running**
 
@@ -41,9 +41,9 @@ NTS Sever:
 Run the following commands as root.
 1. `memecached`
 2. `python3 scripts/fill-memcached.py`
-3`./target/release/cfnts ke-server -f tests/nts-ke-config.yaml`
-4`./target/release/cfnts ntp-server -f tests/ntp-upstream-config.yaml`
-5`./target/release/cfnts ntp-server -f tests/ntp-config.yaml`
+3. `./target/release/cfnts ke-server -f tests/nts-ke-config.yaml`
+4. `./target/release/cfnts ntp-server -f tests/ntp-upstream-config.yaml`
+5. `./target/release/cfnts ntp-server -f tests/ntp-config.yaml`
 
 In addition, edit the `tests/nts-ke-config.yaml` and change the `addr` field to `server-ip-address:4460`.
 
