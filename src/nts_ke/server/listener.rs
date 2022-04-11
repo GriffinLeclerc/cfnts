@@ -22,9 +22,9 @@ use super::connection::KeServerConnState;
 use super::server::KeServer;
 use super::server::KeServerState;
 
-use std::time::Instant;
-use std::fs::OpenOptions;
-use std::io::Write;
+// use std::time::Instant;
+// use std::fs::OpenOptions;
+// use std::io::Write;
 
 const LISTENER_MIO_TOKEN_ID: usize = 0;
 const CONNECTION_MIO_TOKEN_ID_MIN: usize = LISTENER_MIO_TOKEN_ID + 1;
@@ -176,13 +176,13 @@ impl KeServerListener {
         info!(self.logger, "accepting new connection from {}", addr);
 
         
-        let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("res")
-        .expect("Unable to create file");
+        // let mut f = OpenOptions::new()
+        // .write(true)
+        // .append(true)
+        // .open("res")
+        // .expect("Unable to create file");
 
-        let start = Instant::now();
+        // let start = Instant::now();
         let token = mio::Token(self.next_conn_token_id);
         self.increment_next_conn_token_id();
 
@@ -201,11 +201,13 @@ impl KeServerListener {
 
         self.connections.insert(token, connection);
 
-        let end = Instant::now();
+        // let end = Instant::now();
     
-        let time_meas_nanos = end - start;
+        // let time_meas_nanos = end - start;
 
-        writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write file");
+        // writeln!(f, "Cookie exchange measurment").expect("Unable to write file");
+
+        // writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write file");
         // println!("KE Connection ns: {}", time_meas_nanos.as_nanos());
 
         Ok(())

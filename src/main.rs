@@ -25,9 +25,9 @@ use sloggers::terminal::{Destination, TerminalLoggerBuilder};
 use sloggers::types::Severity;
 use sloggers::Build;
 
-use std::time::Instant;
-use std::fs::File;
-use std::io::Write;
+// use std::time::Instant;
+// use std::fs::File;
+// use std::io::Write;
 
 use std::process;
 
@@ -71,15 +71,11 @@ fn main() {
     // _scope_guard can be used to reset the global logger. You can do it by just dropping it.
     let _scope_guard = slog_scope::set_global_logger(logger.clone());
 
-    let mut f = File::create("res").expect("Unable to create file");
-
     if matches.subcommand.is_none() {
         eprintln!("please specify a valid subcommand: only client, ke-server, and ntp-server \
                    are supported.");
         process::exit(1);
     }
-
-    let start = Instant::now();
 
     if let Some(ke_server_matches) = matches.subcommand_matches("ke-server") {
         sub_command::ke_server::run(ke_server_matches);
@@ -90,11 +86,4 @@ fn main() {
     if let Some(client_matches) = matches.subcommand_matches("client") {
         sub_command::client::run(client_matches);
     }
-
-    let end = Instant::now();
-
-    let time_meas_nanos = end - start;
-
-    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write file");
-    // println!("{}", time_meas_nanos.as_nanos());
 }

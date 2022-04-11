@@ -93,6 +93,7 @@ struct ServerState {
     taken: SystemTime,
 }
 
+
 /// run_server runs the ntp server on the given socket.
 /// The caller has to set up the socket options correctly
 fn run_server(
@@ -102,6 +103,9 @@ fn run_server(
     logger: slog::Logger,
     ipv4: bool,
 ) -> Result<(), std::io::Error> {
+    
+
+
     let sockfd = socket.as_raw_fd();
     setsockopt(sockfd, sockopt::ReceiveTimestamp, &true)
         .expect("setsockopt failed; can't run ntp server");
@@ -232,7 +236,7 @@ pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::erro
         Some(upstream_addr) => {
             info!(logger, "connecting to upstream");
             let servstate = servstate.clone();
-            let rot_logger = logger.new(slog::o!("task"=>"refereshing servstate"));
+            let rot_logger = logger.new(slog::o!("task"=>"refreshing servstate"));
             let socket = UdpSocket::bind("127.0.0.1:0")?; // we only go to local
             socket.set_read_timeout(Some(time::Duration::from_secs(1)))?;
             thread::spawn(move || {
@@ -333,6 +337,11 @@ fn create_header(
     }
 }
 
+use std::time::Instant;
+use std::fs::OpenOptions;
+use std::io::Write;
+
+
 fn response(
     query: &[u8],
     r_time: SystemTime,
@@ -349,7 +358,21 @@ fn response(
     if query_packet.header.mode != PacketMode::Client {
         return Err(Error::new(ErrorKind::InvalidData, "not client mode"));
     }
+
+    let mut f = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("res")
+        .expect("Unable to create file");
+
+    // let mut start = Instant::now();
+    // let mut end = start;
+
+    // Benchmark me
     if is_nts_packet(&query_packet) {
+
+        let start = Instant::now();
+
         NTS_COUNTER.inc();
         let cookie = extract_extension(&query_packet, NTSCookie).unwrap();
         let keyid_maybe = get_keyid(&cookie.contents);
@@ -361,12 +384,18 @@ fn response(
                     Some(key) => {
                         let nts_keys = eat_cookie(&cookie.contents, key.as_ref());
                         match nts_keys {
-                            Some(nts_dir_keys) => Ok(process_nts(
+                            Some(nts_dir_keys) => {
+
+                                let end = Instant::now(); 
+
+                                writeln!(f, "{}", (end - start).as_nanos()).expect("Unable to write file");
+
+                                Ok(process_nts(
                                 resp_header,
                                 nts_dir_keys,
                                 cookie_keys.clone(),
                                 query,
-                            )),
+                            ))},
                             None => {
                                 UNDECRYPTABLE_COOKIE_COUNTER.inc();
                                 error!(logger, "undecryptable cookie with keyid {:x?}", keyid);
@@ -390,6 +419,8 @@ fn response(
     } else {
         Ok(serialize_header(resp_header))
     }
+
+    // let end = Instant::now();
 }
 
 fn process_nts(
