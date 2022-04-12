@@ -1,6 +1,6 @@
 import statistics as stats
 
-file1 = open('../res', 'r')
+file1 = open('res', 'r')
 lines = file1.readlines()
 
 def mapInt(num):
@@ -14,7 +14,7 @@ def printThresh(l, threshold):
     threshCount = len(outliers)
     print("Values above " + str(threshold))
     print("     Number: " + str(threshCount))
-    percent = float('%.2f'%((threshCount/count) * 100))
+    percent = '%.2f'%((threshCount/count) * 100)
     print("     Ratio: " + str(threshCount) + "/" + str(count) + " | or " + percent + "%")
 
 
