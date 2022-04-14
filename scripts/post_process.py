@@ -1,6 +1,6 @@
 import statistics as stats
 
-file1 = open('../res', 'r')
+file1 = open('res', 'r')
 lines = file1.readlines()
 
 def mapInt(num):
