@@ -362,11 +362,8 @@ fn response(
     let mut f = OpenOptions::new()
         .write(true)
         .append(true)
-        .open("res")
+        .open("results/server_ntp_enc")
         .expect("Unable to create file");
-
-    // let mut start = Instant::now();
-    // let mut end = start;
 
     // Benchmark me
     if is_nts_packet(&query_packet) {

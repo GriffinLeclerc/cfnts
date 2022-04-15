@@ -13,6 +13,9 @@ use slog::{debug, error, info};
 use std::sync::{Arc, RwLock};
 use std::io::{Read, Write};
 
+use std::time::Instant;
+use std::fs::OpenOptions;
+
 use crate::cookie::{make_cookie, NTSKeys};
 use crate::key_rotator::KeyRotator;
 use crate::nts_ke::records::gen_key;
@@ -50,6 +53,14 @@ use super::server::KeServerState;
 // response uses the configuration and the keys and computes the response
 // sent to the client.
 fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<u8> {
+    let mut f = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("results/server_ke_create")
+        .expect("Unable to create file");
+
+    let start = Instant::now();
+    
     let mut response: Vec<u8> = Vec::new();
 
     let next_protocol_record = NextProtocolRecord::from(vec![
@@ -69,6 +80,8 @@ fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<
 
     // According to the spec, if the next protocol is NTPv4, we should send eight cookies to the
     // client.
+    // 4.1.6.  New Cookie for NTPv4
+    // Servers MUST send at least one record of this type, and SHOULD send eight of them, if the Next Protocol Negotiation response record contains Protocol ID 0 (NTPv4) and the AEAD Algorithm Negotiation response record is not empty. 
     for _ in 0..8 {
         let cookie = make_cookie(keys, actual_key.as_ref(), key_id);
         let cookie_record = NewCookieRecord::from(cookie);
@@ -76,6 +89,11 @@ fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<
     }
     response.append(&mut serialize(port_record));
     response.append(&mut serialize(end_record));
+
+    let end = Instant::now();
+    let time_meas_nanos = end - start;
+    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write file");
+
     response
 }
 

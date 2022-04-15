@@ -19,6 +19,10 @@ use crate::error::WrapError;
 use crate::ntp::client::run_nts_ntp_client;
 use crate::nts_ke::client::run_nts_ke_client;
 
+use std::time::Instant;
+use std::fs::OpenOptions;
+use std::io::Write;
+
 #[derive(Debug)]
 pub struct ClientConfig {
     pub host: String,
@@ -76,18 +80,52 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         use_ipv4,
     };
 
-    let res = run_nts_ke_client(&logger, client_config);
 
-    match res {
+    let mut f = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("results/client_nts_ke")
+        .expect("Unable to create file");
+
+    let start = Instant::now();
+
+    let ke_res = run_nts_ke_client(&logger, client_config);
+
+    match ke_res {
         Err(err) => {
             eprintln!("failure of tls stage: {}", err);
             process::exit(1)
         }
         Ok(_) => {}
     }
-    let state = res.unwrap();
+
+    let state = ke_res.unwrap();
+
+    let end = Instant::now();
+
+    let time_meas_nanos = end - start;
+
+    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write client NTS KE measurement");
+
     debug!(logger, "running UDP client with state {:x?}", state);
-    let res = run_nts_ntp_client(&logger, state);
+
+    let mut f = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("results/client_nts_ntp")
+        .expect("Unable to create file");
+
+    let start = Instant::now();
+
+    let res = run_nts_ntp_client(&logger, state.clone());
+
+    let end = Instant::now();
+
+    let time_meas_nanos = end - start;
+
+    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write client NTS NTP measurement");
+
+
     match res {
         Err(err) => {
             eprintln!("failure of client: {}", err);
@@ -98,4 +136,24 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             println!("offset: {:.6}", result.time_diff);
         }
     }
+
+
+    // Gather multiple measurements using the same key
+
+    // for _ in 1..30000 {
+    //     let res = run_nts_ntp_client(&logger, state.clone());
+    //     match res {
+    //         Err(err) => {
+    //             eprintln!("failure of client: {}", err);
+    //             process::exit(1)
+    //         }
+    //         Ok(result) => {
+    //             println!("stratum: {:}", result.stratum);
+    //             println!("offset: {:.6}", result.time_diff);
+    //         }
+    //     }
+    // }
+
+
+
 }
