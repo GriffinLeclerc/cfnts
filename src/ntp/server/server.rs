@@ -378,7 +378,7 @@ fn response(
 
                                 let end = Instant::now(); 
 
-                                SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos()).expect("unable to write to channel.");
+                                SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
 
                                 Ok(process_nts(
                                 resp_header,

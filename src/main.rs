@@ -35,11 +35,11 @@ use once_cell::sync::OnceCell;
 
 use std::process;
 
-pub static CLIENT_KE_S: OnceCell<crossbeam_channel::Sender<u128>> = OnceCell::new();
-pub static CLIENT_NTP_S: OnceCell<crossbeam_channel::Sender<u128>> = OnceCell::new();
+pub static CLIENT_KE_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
+pub static CLIENT_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 
-pub static SERVER_KE_S: OnceCell<crossbeam_channel::Sender<u128>> = OnceCell::new();
-pub static SERVER_NTP_S: OnceCell<crossbeam_channel::Sender<u128>> = OnceCell::new();
+pub static SERVER_KE_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
+pub static SERVER_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 
 /// Create a logger to be used throughout cfnts.
 fn create_logger<'a>(matches: &clap::ArgMatches<'a>) -> slog::Logger {

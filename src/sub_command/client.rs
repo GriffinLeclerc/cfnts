@@ -20,9 +20,13 @@ use crate::ntp::client::run_nts_ntp_client;
 use crate::nts_ke::client::run_nts_ke_client;
 
 use std::time::Instant;
+use std::thread;
 
 use crate::CLIENT_KE_S;
 use crate::CLIENT_NTP_S;
+
+use crate::SERVER_KE_S;
+use crate::SERVER_NTP_S;
 
 #[derive(Debug)]
 pub struct ClientConfig {
@@ -41,9 +45,6 @@ pub fn load_tls_certs(path: String) -> Result<Vec<Certificate>, config::ConfigEr
 
 /// The entry point of `client`.
 pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
-    // This should return the clone of `logger` in the main function.
-    let logger = slog_scope::logger();
-
     let host = matches
         .value_of("host")
         .map(String::from)
@@ -66,61 +67,112 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             use_ipv4 = Some(false);
         }
     }
-
+    
     let mut trusted_cert = None;
     if let Some(file) = cert_file {
         if let Ok(certs) = load_tls_certs(file) {
             trusted_cert = Some(certs[0].clone());
         }
-    }
+    }   
 
-    let client_config = ClientConfig {
-        host,
-        port,
-        trusted_cert,
-        use_ipv4,
-    };
+    // Params for load testing
+    // for a single client:
+    //      let min_clients = 1;
+    //      let max_clients = 1;
+    //      let step_size = 1;
 
-    let start = Instant::now();
+    let min_clients = 1;
+    let max_clients = 1;
+    let step_size = 1;
 
-    let ke_res = run_nts_ke_client(&logger, client_config);
+    let mut num_clients = min_clients;
 
-    match ke_res {
-        Err(err) => {
-            eprintln!("failure of tls stage: {}", err);
-            process::exit(1)
+    while num_clients <= max_clients {
+
+        SERVER_NTP_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
+        SERVER_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
+
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
+        CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
+
+        println!("{} client(s)", num_clients);
+
+        // track the threads to join them later
+        let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
+
+        for _ in 0..num_clients {
+            // run a new client in each thread
+
+            let host = host.clone();
+            let port = port.clone();
+            let trusted_cert = trusted_cert.clone();
+
+            join_handles.push(std::thread::spawn(move || {
+
+                // This should return the clone of `logger` in the main function.
+                let logger = slog_scope::logger();
+
+                let client_config = ClientConfig {
+                    host,
+                    port,
+                    trusted_cert,
+                    use_ipv4,
+                };
+
+                // KE
+                let start = Instant::now();
+
+                let ke_res = run_nts_ke_client(&logger, client_config);
+
+                match ke_res {
+                    Err(err) => {
+                        eprintln!("failure of tls stage: {}", err);
+                        process::exit(1)
+                    }
+                    Ok(_) => {}
+                }
+
+                let state = ke_res.unwrap();
+
+                let end = Instant::now();
+                let time_meas_nanos = (end - start).as_nanos().to_string();
+
+                CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+
+                debug!(logger, "running UDP client with state {:x?}", state);
+
+                // NTP
+                let start = Instant::now();
+
+                let res = run_nts_ntp_client(&logger, state.clone());
+
+                let end = Instant::now();
+                let time_meas_nanos = (end - start).as_nanos().to_string();
+
+                CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+
+
+                match res {
+                    Err(err) => {
+                        eprintln!("failure of client: {}", err);
+                        process::exit(1)
+                    }
+                    Ok(result) => {
+                        println!("stratum: {:}", result.stratum);
+                        println!("offset: {:.6}", result.time_diff);
+                    }
+                }
+            }));
+
+        };
+
+        // wait for the clients
+        for handle in join_handles.into_iter() { 
+            handle.join().unwrap();
         }
-        Ok(_) => {}
-    }
-
-    let state = ke_res.unwrap();
-
-    let end = Instant::now();
-    let time_meas_nanos = (end - start).as_nanos();
-
-    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
-
-    debug!(logger, "running UDP client with state {:x?}", state);
-
-    let start = Instant::now();
-
-    let res = run_nts_ntp_client(&logger, state.clone());
-
-    let end = Instant::now();
-    let time_meas_nanos = (end - start).as_nanos();
-
-    CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
-
-
-    match res {
-        Err(err) => {
-            eprintln!("failure of client: {}", err);
-            process::exit(1)
-        }
-        Ok(result) => {
-            println!("stratum: {:}", result.stratum);
-            println!("offset: {:.6}", result.time_diff);
-        }
+        
+        // step
+        num_clients += step_size;
     }
 
 

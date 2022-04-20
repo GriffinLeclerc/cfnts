@@ -86,7 +86,7 @@ fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<
     response.append(&mut serialize(end_record));
 
     let end = Instant::now();
-    SERVER_KE_S.get().clone().unwrap().send((end - start).as_nanos()).expect("unable to write to channel.");
+    SERVER_KE_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
 
     response
 }
