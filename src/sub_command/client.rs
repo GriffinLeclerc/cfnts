@@ -20,10 +20,9 @@ use crate::ntp::client::run_nts_ntp_client;
 use crate::nts_ke::client::run_nts_ke_client;
 
 use std::time::Instant;
-use std::fs::OpenOptions;
-use std::io::Write;
 
 use crate::CLIENT_KE_S;
+use crate::CLIENT_NTP_S;
 
 #[derive(Debug)]
 pub struct ClientConfig {
@@ -97,28 +96,20 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let state = ke_res.unwrap();
 
     let end = Instant::now();
-
     let time_meas_nanos = (end - start).as_nanos();
 
     CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
     debug!(logger, "running UDP client with state {:x?}", state);
 
-    let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/client_nts_ntp")
-        .expect("Unable to create file");
-
     let start = Instant::now();
 
     let res = run_nts_ntp_client(&logger, state.clone());
 
     let end = Instant::now();
+    let time_meas_nanos = (end - start).as_nanos();
 
-    let time_meas_nanos = end - start;
-
-    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write client NTS NTP measurement");
+    CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
 
     match res {

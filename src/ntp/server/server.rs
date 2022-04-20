@@ -338,8 +338,8 @@ fn create_header(
 }
 
 use std::time::Instant;
-use std::fs::OpenOptions;
-use std::io::Write;
+
+use crate::SERVER_NTP_S;
 
 
 fn response(
@@ -359,13 +359,6 @@ fn response(
         return Err(Error::new(ErrorKind::InvalidData, "not client mode"));
     }
 
-    let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/server_ntp_enc")
-        .expect("Unable to create file");
-
-    // Benchmark me
     if is_nts_packet(&query_packet) {
 
         let start = Instant::now();
@@ -385,7 +378,7 @@ fn response(
 
                                 let end = Instant::now(); 
 
-                                writeln!(f, "{}", (end - start).as_nanos()).expect("Unable to write file");
+                                SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos()).expect("unable to write to channel.");
 
                                 Ok(process_nts(
                                 resp_header,
