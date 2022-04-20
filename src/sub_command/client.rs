@@ -81,6 +81,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     //      let max_clients = 1;
     //      let step_size = 1;
 
+    let num_runs = 100;
+    let exchanges_per_key = 1;
+
     let min_clients = 1;
     let max_clients = 1;
     let step_size = 1;
@@ -100,71 +103,78 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         // track the threads to join them later
         let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
 
-        for _ in 0..num_clients {
-            // run a new client in each thread
+        // run multiple times
+        for _ in 0..num_runs {
+            // using multiple clients
+            for _ in 0..num_clients {
+                // need to clone these for thread lifetimes
+                let host = host.clone();
+                let port = port.clone();
+                let trusted_cert = trusted_cert.clone();
 
-            let host = host.clone();
-            let port = port.clone();
-            let trusted_cert = trusted_cert.clone();
+                // run a new client in each thread
+                join_handles.push(std::thread::spawn(move || {
 
-            join_handles.push(std::thread::spawn(move || {
+                    // This should return the clone of `logger` in the main function.
+                    let logger = slog_scope::logger();
 
-                // This should return the clone of `logger` in the main function.
-                let logger = slog_scope::logger();
+                    let client_config = ClientConfig {
+                        host,
+                        port,
+                        trusted_cert,
+                        use_ipv4,
+                    };
 
-                let client_config = ClientConfig {
-                    host,
-                    port,
-                    trusted_cert,
-                    use_ipv4,
-                };
+                    // KE
+                    let start = Instant::now();
 
-                // KE
-                let start = Instant::now();
+                    let ke_res = run_nts_ke_client(&logger, client_config);
 
-                let ke_res = run_nts_ke_client(&logger, client_config);
-
-                match ke_res {
-                    Err(err) => {
-                        eprintln!("failure of tls stage: {}", err);
-                        process::exit(1)
+                    match ke_res {
+                        Err(err) => {
+                            eprintln!("failure of tls stage: {}", err);
+                            process::exit(1)
+                        }
+                        Ok(_) => {}
                     }
-                    Ok(_) => {}
-                }
 
-                let state = ke_res.unwrap();
+                    let state = ke_res.unwrap();
 
-                let end = Instant::now();
-                let time_meas_nanos = (end - start).as_nanos().to_string();
+                    let end = Instant::now();
+                    let time_meas_nanos = (end - start).as_nanos().to_string();
 
-                CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+                    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
-                debug!(logger, "running UDP client with state {:x?}", state);
+                    debug!(logger, "running UDP client with state {:x?}", state);
 
-                // NTP
-                let start = Instant::now();
+                    // NTP
+                    // allow for multiple time transfers per key
+                    for _ in 0..exchanges_per_key {
+                        let start = Instant::now();
 
-                let res = run_nts_ntp_client(&logger, state.clone());
+                        let res = run_nts_ntp_client(&logger, state.clone());
 
-                let end = Instant::now();
-                let time_meas_nanos = (end - start).as_nanos().to_string();
+                        let end = Instant::now();
+                        let time_meas_nanos = (end - start).as_nanos().to_string();
 
-                CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+                        CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
 
-                match res {
-                    Err(err) => {
-                        eprintln!("failure of client: {}", err);
-                        process::exit(1)
+                        match res {
+                            Err(err) => {
+                                eprintln!("failure of client: {}", err);
+                                process::exit(1)
+                            }
+                            Ok(result) => {
+                                println!("stratum: {:}", result.stratum);
+                                println!("offset: {:.6}", result.time_diff);
+                            }
+                        }
                     }
-                    Ok(result) => {
-                        println!("stratum: {:}", result.stratum);
-                        println!("offset: {:.6}", result.time_diff);
-                    }
-                }
-            }));
+                }));
 
-        };
+            };
+        }
 
         // wait for the clients
         for handle in join_handles.into_iter() { 
