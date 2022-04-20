@@ -23,6 +23,8 @@ use std::time::Instant;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+use crate::CLIENT_KE_S;
+
 #[derive(Debug)]
 pub struct ClientConfig {
     pub host: String,
@@ -80,13 +82,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         use_ipv4,
     };
 
-
-    let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/client_nts_ke")
-        .expect("Unable to create file");
-
     let start = Instant::now();
 
     let ke_res = run_nts_ke_client(&logger, client_config);
@@ -103,9 +98,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let end = Instant::now();
 
-    let time_meas_nanos = end - start;
+    let time_meas_nanos = (end - start).as_nanos();
 
-    writeln!(f, "{}", time_meas_nanos.as_nanos()).expect("Unable to write client NTS KE measurement");
+    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
     debug!(logger, "running UDP client with state {:x?}", state);
 

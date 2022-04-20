@@ -25,11 +25,17 @@ use sloggers::terminal::{Destination, TerminalLoggerBuilder};
 use sloggers::types::Severity;
 use sloggers::Build;
 
-// use std::time::Instant;
-// use std::fs::File;
-// use std::io::Write;
+use crossbeam_channel::unbounded;
+
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::{thread};
+
+use once_cell::sync::OnceCell;
 
 use std::process;
+
+pub static CLIENT_KE_S: OnceCell<crossbeam_channel::Sender<u128>> = OnceCell::new();
 
 /// Create a logger to be used throughout cfnts.
 fn create_logger<'a>(matches: &clap::ArgMatches<'a>) -> slog::Logger {
@@ -76,6 +82,27 @@ fn main() {
                    are supported.");
         process::exit(1);
     }
+
+    // create the channel
+    let (client_ke_s, client_ke_r) = unbounded();
+
+    // populate the once cell
+    CLIENT_KE_S.set(client_ke_s).expect("unable to fill once cell.");
+
+    // make a thread for writing client_ke meas
+    thread::spawn(move || {
+        let mut f = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("results/client_nts_ke")
+        .expect("Unable to create file");
+
+        loop {
+            // get and write measurements
+            let value = client_ke_r.recv().unwrap();
+            writeln!(f, "{}", value).expect("Unable to write file");
+        }
+    });
 
     if let Some(ke_server_matches) = matches.subcommand_matches("ke-server") {
         sub_command::ke_server::run(ke_server_matches);
