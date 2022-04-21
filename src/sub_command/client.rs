@@ -49,7 +49,16 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         .value_of("host")
         .map(String::from)
         .unwrap();
+
+    println!("{}",host);
+    
     let port = matches.value_of("port").map(String::from);
+
+    match port.clone() {
+        Some(x) => println!("port number {}", x),
+        None => println!("no port number"),
+    }
+
     let cert_file = matches.value_of("cert").map(String::from);
 
     // By default, use_ipv4 is None (no preference for using either ipv4 or ipv6
@@ -81,12 +90,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     //      let max_clients = 1;
     //      let step_size = 1;
 
-    let num_runs = 100;
-    let exchanges_per_key = 1;
+    let num_runs = 1;
+    let exchanges_per_cookie = 1;
 
     let min_clients = 1;
-    let max_clients = 1;
-    let step_size = 1;
+    let max_clients = 1500;
+    let step_size = 50;
 
     let mut num_clients = min_clients;
 
@@ -100,11 +109,11 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
         println!("{} client(s)", num_clients);
 
-        // track the threads to join them later
-        let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
-
         // run multiple times
         for _ in 0..num_runs {
+            // track the threads to join them later
+            let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
+
             // using multiple clients
             for _ in 0..num_clients {
                 // need to clone these for thread lifetimes
@@ -148,8 +157,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     debug!(logger, "running UDP client with state {:x?}", state);
 
                     // NTP
-                    // allow for multiple time transfers per key
-                    for _ in 0..exchanges_per_key {
+                    // allow for multiple time transfers per cookie
+                    for _ in 0..exchanges_per_cookie {
                         let start = Instant::now();
 
                         let res = run_nts_ntp_client(&logger, state.clone());
@@ -174,13 +183,14 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 }));
 
             };
+
+            // wait for the clients
+            for handle in join_handles.into_iter() { 
+                handle.join().unwrap();
+            }
+
         }
 
-        // wait for the clients
-        for handle in join_handles.into_iter() { 
-            handle.join().unwrap();
-        }
-        
         // step
         num_clients += step_size;
     }
