@@ -4,4 +4,4 @@
 #    ./target/release/cfnts client -c tests/intermediate.pem nts-server.iol.unh.edu
 # done
 
-./target/release/cfnts client -c tests/intermediate.pem doctor.iol.unh.edu
+./target/release/cfnts client -c tests/intermediate.pem nts-server.iol.unh.edu
