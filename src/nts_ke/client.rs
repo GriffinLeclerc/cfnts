@@ -70,7 +70,8 @@ pub fn run_nts_ke_client(
 
     match client_config.trusted_cert {
         Some(cert) => {
-            info!(logger, "loading custom trust root");
+            // experimental setup - we always load a custom cert root
+            // info!(logger, "loading custom trust root");
             tls_config.root_store.add(&cert)?;
         }
         None => {

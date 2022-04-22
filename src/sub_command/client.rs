@@ -9,6 +9,7 @@ use slog::debug;
 use std::fs;
 use std::io::BufReader;
 use std::process;
+use std::thread::sleep;
 
 use rustls::{
     internal::pemfile::certs,
@@ -49,16 +50,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         .value_of("host")
         .map(String::from)
         .unwrap();
-
-    println!("{}",host);
-    
     let port = matches.value_of("port").map(String::from);
-
-    match port.clone() {
-        Some(x) => println!("port number {}", x),
-        None => println!("no port number"),
-    }
-
     let cert_file = matches.value_of("cert").map(String::from);
 
     // By default, use_ipv4 is None (no preference for using either ipv4 or ipv6
@@ -94,8 +86,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let exchanges_per_cookie = 1;
 
     let min_clients = 1;
-    let max_clients = 1500;
-    let step_size = 50;
+    let max_clients = 10001;
+    let step_size = 1000;
 
     let mut num_clients = min_clients;
 
@@ -175,8 +167,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                                 process::exit(1)
                             }
                             Ok(result) => {
-                                println!("stratum: {:}", result.stratum);
-                                println!("offset: {:.6}", result.time_diff);
+                                // no prints, assume proper
+                                // println!("stratum: {:}", result.stratum);
+                                // println!("offset: {:.6}", result.time_diff);
                             }
                         }
                     }
@@ -193,6 +186,16 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
         // step
         num_clients += step_size;
+
+        // https://www.howtouselinux.com/post/tcp_time_wait_linux
+        // The RFC defines the time spent in TIME WAIT state as “2 times MSL (Maximum Segment Lifetime)”. But the Linux kernel’s implementation of TCP is hard-coded with a TIME WAIT counter of 60 seconds.
+        // So we wait 61 seconds to ensure enough ports are free again 
+
+        if num_clients <= max_clients {
+            println!("Waiting 61 seconds for unix to free port nums.");
+            sleep(std::time::Duration::from_secs(61));
+        }
+
     }
 
 
