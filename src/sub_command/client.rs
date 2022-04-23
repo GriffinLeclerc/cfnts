@@ -182,20 +182,18 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 handle.join().unwrap();
             }
 
+            // https://www.howtouselinux.com/post/tcp_time_wait_linux
+            // The RFC defines the time spent in TIME WAIT state as “2 times MSL (Maximum Segment Lifetime)”. But the Linux kernel’s implementation of TCP is hard-coded with a TIME WAIT counter of 60 seconds.
+            // So we wait 61 seconds to ensure enough ports are free again 
+
+            if num_clients <= max_clients {
+                println!("Waiting 61 seconds for unix to free port nums.");
+                sleep(std::time::Duration::from_secs(61));
+            }
         }
 
         // step
         num_clients += step_size;
-
-        // https://www.howtouselinux.com/post/tcp_time_wait_linux
-        // The RFC defines the time spent in TIME WAIT state as “2 times MSL (Maximum Segment Lifetime)”. But the Linux kernel’s implementation of TCP is hard-coded with a TIME WAIT counter of 60 seconds.
-        // So we wait 61 seconds to ensure enough ports are free again 
-
-        if num_clients <= max_clients {
-            println!("Waiting 61 seconds for unix to free port nums.");
-            sleep(std::time::Duration::from_secs(61));
-        }
-
     }
 
 
