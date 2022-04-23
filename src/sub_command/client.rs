@@ -87,7 +87,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let min_clients = 1;
     let max_clients = 10001;
-    let step_size = 100;
+    let step_size = 50;
 
     let mut num_clients = min_clients;
 
