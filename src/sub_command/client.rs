@@ -130,10 +130,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let exchanges_per_cookie = 1;
 
     let min_clients = 1;
-    let max_clients = 10001;
-    let step_size = 50;
+    let max_clients = 100;
+    let step_size = 1;
 
     let mut num_clients = min_clients;
+
+    let mut total_clients = 0;
 
     while num_clients <= max_clients {
 
@@ -144,6 +146,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
 
         println!("{} client(s)", num_clients);
+        total_clients += num_clients;
+        println!("{} total client(s)", total_clients);
 
         // run multiple times
         for _ in 0..num_runs {
@@ -229,9 +233,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             // https://www.howtouselinux.com/post/tcp_time_wait_linux
             // The RFC defines the time spent in TIME WAIT state as “2 times MSL (Maximum Segment Lifetime)”. But the Linux kernel’s implementation of TCP is hard-coded with a TIME WAIT counter of 60 seconds.
             // So we wait 61 seconds to ensure enough ports are free again 
-            if num_clients <= max_clients {
+            if total_clients + num_clients > 10000 {
                 println!("Waiting 61 seconds for unix to free port nums.");
                 sleep(std::time::Duration::from_secs(61));
+                total_clients = 0
             }
         }
 

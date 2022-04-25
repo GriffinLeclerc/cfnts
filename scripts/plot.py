@@ -69,6 +69,8 @@ def plot(filename, plotname):
     measurements = []
 
     plotMeasurements = []
+    minMeasurements = []
+    maxMeasurements = []
     plotClientNums.clear()
 
 
@@ -93,19 +95,25 @@ def plot(filename, plotname):
             plotClientNums.append(numClients)
             relevantClientNums(filename).append(lineNum)
 
-            plotMeasurements.append(stats.median(measurements))
+            plotMeasurements.append(stats.mean(measurements))
+            minMeasurements.append(min(measurements))
+            maxMeasurements.append(max(measurements))
 
         else:
             measurements.append(int(line))
 
     # add the last set of measurements
-    plotMeasurements.append(stats.median(measurements))
+    plotMeasurements.append(stats.mean(measurements))
+    minMeasurements.append(min(measurements))
+    maxMeasurements.append(max(measurements))
 
     plt.figure()
 
     plt.gcf().set_size_inches(10, 5)
 
-    plt.plot(plotClientNums, plotMeasurements)
+    plt.plot(plotClientNums, plotMeasurements, 'm')
+    plt.plot(plotClientNums, minMeasurements, 'b')
+    plt.plot(plotClientNums, maxMeasurements, 'r')
 
     plt.xlabel("Number of Concurrent Clients")
     plt.ylabel("Total Operational Time")
