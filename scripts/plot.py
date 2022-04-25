@@ -1,10 +1,10 @@
-from smtplib import LMTP
 import statistics as stats
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 
 plotClientNums = []
-clientLineNums = []
+clientKELineNums = []
+clientNTPLineNums = []
 
 def mapInt(num):
     return int(num)
@@ -19,10 +19,26 @@ def cullOutliers(data):
 
     return newData
 
+def relevantClientNums(filename):
+    if "ke" in filename:
+        return clientKELineNums
+    else:
+        return clientNTPLineNums
+
+# determines if the file in question has client number delimiters
+def hasClientNums(filename):
+    with open(filename, 'r') as file:
+        if "client" in file.read():
+            return True
+    return False
+
 # The server side measurements do not know how many clients there are
 # add that info to their results at known offsets based on the client measurements
 def addClientNums(filename):
     lines = []
+
+    if hasClientNums(filename):
+        return
 
     with open(filename, 'r') as file:
         lines = file.readlines()
@@ -35,7 +51,7 @@ def addClientNums(filename):
         for line in list(lines):
             # print("evaluate line " + str(curLineNum) + line, end='')
             
-            if curLineNum in clientLineNums:
+            if curLineNum in relevantClientNums(filename):
                 delimeter = str(plotClientNums[index]) + " client(s)\n"
                 file.write(delimeter)
                 curLineNum += 1
@@ -54,7 +70,6 @@ def plot(filename, plotname):
 
     plotMeasurements = []
     plotClientNums.clear()
-    clientLineNums.clear()
 
 
     for lineNum, line in enumerate(data):
@@ -69,14 +84,14 @@ def plot(filename, plotname):
                 # no number of clients seen, set it and move on
                 numClients = int(line.replace(" client(s)\n", ""))
                 plotClientNums.append(numClients)
-                clientLineNums.append(lineNum)
+                relevantClientNums(filename).append(lineNum)
                 continue
 
             # this line contatins the number of clients for the following measurements 
             
             numClients = int(line.replace(" client(s)\n", ""))
             plotClientNums.append(numClients)
-            clientLineNums.append(lineNum)
+            relevantClientNums(filename).append(lineNum)
 
             plotMeasurements.append(stats.median(measurements))
 
@@ -86,22 +101,25 @@ def plot(filename, plotname):
     # add the last set of measurements
     plotMeasurements.append(stats.median(measurements))
 
-    
     plt.figure()
 
     plt.gcf().set_size_inches(10, 5)
 
-    plt.set_xlabel = "Number of Clients"
-    plt.set_ylabel = "Total Operational Time"
-
     plt.plot(plotClientNums, plotMeasurements)
+
+    plt.xlabel("Number of Concurrent Clients")
+    plt.ylabel("Total Operational Time")
+
     plt.savefig("figures/" + plotname + ".pdf")
 
-plot('results/client_nts_ntp', "Client NTS NTP Total Time")
-plot('results/client_nts_ke', "Client NTS KE Total Time")
+# Figure gen
+resultPath = "results/10001-step100/"
 
-addClientNums('results/server_ntp_enc')
-addClientNums('results/server_ke_create')
+plot(resultPath + 'client_nts_ntp', "Client NTS NTP Total Time")
+plot(resultPath + 'client_nts_ke', "Client NTS KE Total Time")
 
-plot('results/server_ntp_enc', "Server NTP Encryption")
-plot('results/server_ke_create', "Server NTP Cookie Creation")
+addClientNums(resultPath + 'server_ntp_enc')
+addClientNums(resultPath + 'server_ke_create')
+
+plot(resultPath + 'server_ntp_enc', "Server NTP Encryption")
+plot(resultPath + 'server_ke_create', "Server NTP Cookie Creation")
