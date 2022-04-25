@@ -80,7 +80,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     }   
 
     // Warmup the connections
-    let warmup_runs = 5;
+    let warmup_runs = 10;
 
     for _ in 0..warmup_runs {
         let host = host.clone();
@@ -130,12 +130,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let exchanges_per_cookie = 1;
 
     let min_clients = 1;
-    let max_clients = 100;
-    let step_size = 1;
+    let max_clients = 5000;
+    // let step_size = 1;
 
-    let mut num_clients = min_clients;
+    let mut num_clients: i32 = min_clients;
 
-    let mut total_clients = 0;
+    let mut ports_in_use = warmup_runs;
 
     while num_clients <= max_clients {
 
@@ -146,8 +146,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
 
         println!("{} client(s)", num_clients);
-        total_clients += num_clients;
-        println!("{} total client(s)", total_clients);
+        ports_in_use += num_clients;
+        println!("{} total ports (likely) in use", ports_in_use);
 
         // run multiple times
         for _ in 0..num_runs {
@@ -232,15 +232,20 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
             // https://www.howtouselinux.com/post/tcp_time_wait_linux
             // The RFC defines the time spent in TIME WAIT state as “2 times MSL (Maximum Segment Lifetime)”. But the Linux kernel’s implementation of TCP is hard-coded with a TIME WAIT counter of 60 seconds.
-            // So we wait 61 seconds to ensure enough ports are free again 
-            if total_clients + num_clients > 10000 {
-                println!("Waiting 61 seconds for unix to free port nums.");
+            // So we wait 61 seconds to ensure enough ports are free again once the threshold below is exceeded
+            if ports_in_use + num_clients > 10000 {
+                println!("Waiting 61 seconds for the linux kernel to release TCP ports.");
                 sleep(std::time::Duration::from_secs(61));
-                total_clients = 0
+                ports_in_use = 0
             }
         }
 
         // step
-        num_clients += step_size;
+        if num_clients == 1 {
+            num_clients += 1;
+            continue;
+        }
+
+        num_clients = num_clients * 2;
     }
 }
