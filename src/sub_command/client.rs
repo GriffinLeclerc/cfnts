@@ -129,9 +129,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let num_runs = 1;
     let exchanges_per_cookie = 1;
 
-    let min_clients = 1;
-    let max_clients = 5000;
-    // let step_size = 1;
+    let min_clients = 100;
+    let max_clients = 2000;
+    let step_size = 1;
 
     let mut num_clients: i32 = min_clients;
 
@@ -146,11 +146,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
 
         println!("{} client(s)", num_clients);
-        ports_in_use += num_clients;
-        println!("{} total ports (likely) in use", ports_in_use);
 
         // run multiple times
         for _ in 0..num_runs {
+            ports_in_use += num_clients;
+            println!("{} total ports (likely) in use", ports_in_use);
+
             // track the threads to join them later
             let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
 
@@ -241,11 +242,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         }
 
         // step
-        if num_clients == 1 {
-            num_clients += 1;
-            continue;
-        }
-
-        num_clients = num_clients * 2;
+        num_clients += step_size;
     }
 }

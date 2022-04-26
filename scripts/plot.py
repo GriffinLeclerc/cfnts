@@ -1,5 +1,6 @@
 import statistics as stats
 import matplotlib.pyplot as plt
+import os
 
 plotClientNums = []
 clientKELineNums = []
@@ -145,10 +146,14 @@ def plot(filename, plotname, scale):
     plt.ylabel("Total Operational Time (" + scale + ")")
     plt.legend(loc="upper left")
 
-    plt.savefig("figures/" + plotname + ".pdf")
+    plt.savefig(figurePath + plotname + ".pdf")
 
 # Figure gen
-resultPath = "results/"
+resultPath = "results/1250/"
+figurePath = resultPath.replace("results/", "figures/")
+
+if not os.path.exists(figurePath):
+    os.makedirs(figurePath)
 
 plot(resultPath + 'client_nts_ntp', "Client NTS NTP Total Time", "ms")
 plot(resultPath + 'client_nts_ke', "Client NTS KE Total Time", "ms")
