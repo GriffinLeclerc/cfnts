@@ -237,7 +237,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             if ports_in_use + num_clients > 10000 {
                 println!("Waiting 61 seconds for the linux kernel to release TCP ports.");
                 sleep(std::time::Duration::from_secs(61));
-                ports_in_use = 0
+                ports_in_use = 0;
+
+                CLIENT_NTP_S.get().clone().unwrap().send("Waiting".to_string()).expect("unable to write to channel.");
+                CLIENT_KE_S.get().clone().unwrap().send("Waiting".to_string()).expect("unable to write to channel.");
             }
         }
 
