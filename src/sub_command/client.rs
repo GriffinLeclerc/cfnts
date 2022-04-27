@@ -176,7 +176,11 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     };
 
                     // wait on the barrier
-                    my_barrier.wait();
+                    let res = my_barrier.wait();
+
+                    if res.is_leader() {
+                        println!("Started")
+                    }
 
                     // KE
                     let start = Instant::now();
