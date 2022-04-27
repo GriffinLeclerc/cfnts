@@ -219,19 +219,19 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                         CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
+                        let h = res.unwrap();
 
-                        match res {
-                            Err(err) => {
-                                // eprintln!("failure of client: {}", err);
-                                sleep(std::time::Duration::from_secs(30));
-                                process::exit(1)
-                            }
-                            Ok(_result) => {
-                                // no prints, assume proper
-                                // println!("stratum: {:}", _result.stratum);
-                                // println!("offset: {:.6}", _result.time_diff);
-                            }
-                        }
+                        // match res {
+                        //     Err(err) => {
+                        //         eprintln!("failure of client: {}", err);
+                        //         process::exit(1)
+                        //     }
+                        //     Ok(_) => {
+                        //         // no prints, assume proper
+                        //         // println!("stratum: {:}", _result.stratum);
+                        //         // println!("offset: {:.6}", _result.time_diff);
+                        //     }
+                        // }
                     }
                 }));
 
