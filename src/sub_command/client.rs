@@ -129,9 +129,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let num_runs = 1;
     let exchanges_per_cookie = 1;
 
-    let min_clients = 100;
+    let min_clients = 1000;
     let max_clients = 2000;
-    let step_size = 1;
+    let step_size = 20;
 
     let mut num_clients: i32 = min_clients;
 
@@ -219,6 +219,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                         match res {
                             Err(err) => {
                                 eprintln!("failure of client: {}", err);
+                                loop{}
                                 process::exit(1)
                             }
                             Ok(_result) => {
