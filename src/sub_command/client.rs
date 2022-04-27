@@ -222,7 +222,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                         match res {
                             Err(err) => {
-                                eprintln!("failure of client: {}", err);
+                                // eprintln!("failure of client: {}", err);
                                 sleep(std::time::Duration::from_secs(30));
                                 process::exit(1)
                             }
