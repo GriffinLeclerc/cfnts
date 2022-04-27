@@ -26,6 +26,9 @@ use std::thread;
 use crate::CLIENT_KE_S;
 use crate::CLIENT_NTP_S;
 
+use std::sync::{Arc, Barrier};
+use std::convert::TryInto;
+
 #[derive(Debug)]
 pub struct ClientConfig {
     pub host: String,
@@ -148,12 +151,16 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             // track the threads to join them later
             let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
 
+            let barrier = Arc::new(Barrier::new(num_clients.try_into().unwrap()));
+
             // using multiple clients
             for _ in 0..num_clients {
                 // need to clone these for thread lifetimes
                 let host = host.clone();
                 let port = port.clone();
                 let trusted_cert = trusted_cert.clone();
+
+                let my_barrier = Arc::clone(&barrier);
 
                 // run a new client in each thread
                 join_handles.push(std::thread::spawn(move || {
@@ -167,6 +174,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                         trusted_cert,
                         use_ipv4,
                     };
+
+                    // wait on the barrier
+                    my_barrier.wait();
 
                     // KE
                     let start = Instant::now();
@@ -189,6 +199,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
 
                     //debug!(logger, "running UDP client with state {:x?}", state);
+
+                    // wait on the barrier
+                    my_barrier.wait();
 
                     // NTP
                     // allow for multiple time transfers per cookie
