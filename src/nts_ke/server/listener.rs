@@ -176,7 +176,7 @@ impl KeServerListener {
         let token = mio::Token(self.next_conn_token_id);
         self.increment_next_conn_token_id();
 
-        let timeout_duration = Duration::new(self.state.config.timeout(), 0);
+        let timeout_duration = Duration::new(self.state.config.timeout(), 500000000);
 
         // If the timeout is so large that we cannot put it in SystemTime, we can assume that
         // it doesn't have a timeout and just don't add it into the map.

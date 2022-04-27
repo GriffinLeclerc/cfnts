@@ -26,9 +26,6 @@ use std::thread;
 use crate::CLIENT_KE_S;
 use crate::CLIENT_NTP_S;
 
-use crate::SERVER_KE_S;
-use crate::SERVER_NTP_S;
-
 #[derive(Debug)]
 pub struct ClientConfig {
     pub host: String,
@@ -138,10 +135,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let mut ports_in_use = warmup_runs;
 
     while num_clients <= max_clients {
-
-        SERVER_NTP_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
-        SERVER_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
-
         CLIENT_NTP_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
         CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
 
