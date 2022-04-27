@@ -169,7 +169,7 @@ impl KeServerListener {
 
         // Successfully accepting a connection.
 
-        info!(self.logger, "accepting new connection from {}", addr);
+        //info(self.logger, "accepting new connection from {}", addr);
 
         
         

@@ -107,7 +107,7 @@ impl KeServer {
         let logger = self.state.config.logger();
 
         // Side-effect. Logging.
-        info!(logger, "initializing keys with memcached");
+        //info(logger, "initializing keys with memcached");
 
         // Create another reference to the lock so that we can pass it to another thread and
         // periodically rotate the keys.
@@ -118,7 +118,7 @@ impl KeServer {
 
         // We need to clone the metrics config here because we need to move it to another thread.
         if let Some(metrics_config) = self.state.config.metrics_config.clone() {
-            info!(logger, "spawning metrics");
+            //info(logger, "spawning metrics");
 
             // Create a child logger to use inside the metric server.
             let log_metrics = logger.new(slog::o!("component" => "metrics"));
@@ -136,7 +136,7 @@ impl KeServer {
 
         for addr in self.state.config.addrs() {
             // Side-effect. Logging.
-            info!(logger, "starting NTS-KE server over TCP/TLS on {}", addr);
+            //info(logger, "starting NTS-KE server over TCP/TLS on {}", addr);
 
             // Instantiate a listener.
             // If there is an error here just return an error immediately so that we don't have to

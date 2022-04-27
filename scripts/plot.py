@@ -6,9 +6,6 @@ plotClientNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
-minObsClients = 0
-maxObsClients = 200
-
 def mapInt(num):
     return int(num)
 
@@ -71,31 +68,35 @@ def addClientNums(filename):
             curLineNum += 1
 
 # Scale measurements 
-def adjustMeasurements(lists, scale):
+def adjustMeasurement(l, scale):
     scalar = 1.0
     if scale == "ms":
         scalar = 1000000.0
     elif scale == "us":
         scalar = 1000.0
+    
+    for i, val in enumerate(l):
+        l[i] = val / scalar
 
+def adjustMeasurements(lists, scale):
     for l in lists:
-        for i, val in enumerate(l):
-            l[i] = val / scalar
-            # print(str(l[i]) + scale)
+        adjustMeasurement(l, scale)
 
 # determine if the desired number of clients is relevant to the plot being made
-def inPlotWindow(num):
-    return num <= minObsClients or num > maxObsClients
+def inPlotWindow(numClients):
+    return numClients > minObsClients and numClients <= maxObsClients
 
-def addClientNum(num, lineNum, plotClientNums, relevantClientNums, filename):
-    plotClientNums.append(num)
-    relevantClientNums(filename).append(lineNum)
+def addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename):
+    if inPlotWindow(numClients):
+        plotClientNums.append(numClients)
+        relevantClientNums(filename).append(lineNum)
 
 
 def addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements):
-    meanMeasurements.append(stats.mean(measurements))
-    minMeasurements.append(min(measurements))
-    maxMeasurements.append(max(measurements))
+    if inPlotWindow(numClients):
+        meanMeasurements.append(stats.mean(measurements))
+        minMeasurements.append(min(measurements))
+        maxMeasurements.append(max(measurements))
 
 
 # Plot the data
@@ -111,9 +112,6 @@ def plot(filename, plotname, scale):
     maxMeasurements = []
     plotClientNums.clear()
 
-    plt.figure()
-    plt.gcf().set_size_inches(20, 10)
-
 
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
@@ -126,7 +124,8 @@ def plot(filename, plotname, scale):
 
         if "Waiting" in line:
             # plot a green vertical line at numClients
-            plt.axvline(numClients, color='g')
+            if inPlotWindow(numClients):
+                plt.axvline(numClients, color='g')
             continue
 
         if "client(s)" in line:
@@ -140,10 +139,12 @@ def plot(filename, plotname, scale):
             if numClients != len(measurements):
                 print("! " + filename + ": Clients: " + str(numClients) + " | numMeasS: " + str(len(measurements)) + " !")
 
+            # print("Add data for previous number of clients: " + str(len(measurements)))
+            addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
+
             numClients = int(line.replace(" client(s)\n", ""))
             addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename)
 
-            addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
             # clear the measurements
             measurements = []
@@ -151,10 +152,14 @@ def plot(filename, plotname, scale):
         else:
             measurements.append(int(line))
 
+    file1.close()
 
     # if the server failed, add 0 RTTs to cause alarm
     if len(measurements) == 0:
         measurements.append(0)
+
+    plt.figure()
+    plt.gcf().set_size_inches(20, 10)
     
     # add the last set of measurements
     addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
@@ -171,18 +176,74 @@ def plot(filename, plotname, scale):
 
     plt.savefig(figurePath + plotname + ".pdf")
 
-# Figure gen
+# Make Pseudo Distribution
+def plotPseudoCDF(obsNum, filename, plotname, scale):
+    file1 = open(filename, 'r')
+    lines = file1.readlines()
+
+    data = []
+
+    for _, line in enumerate(lines):
+        # if lineNum > 100000:
+        #     continue
+
+        if line.strip() == "":
+                continue
+
+        if "Waiting" in line:
+            continue
+
+        if "client(s)" in line:
+            numClients = int(line.replace(" client(s)\n", ""))
+            if numClients == obsNum:
+                print("Hit")
+                hit = True
+            else:
+                hit = False
+        else:
+            if hit:
+                data.append(int(line))
+
+    adjustMeasurement(data, scale)
+
+    data.sort()
+
+    plt.figure()
+    # plt.yscale("log")
+
+    plt.xlabel("Individual Observation")
+    plt.ylabel("Total Operational Time (" + scale + ")")
+
+    plt.scatter(list(range(0, len(data))), data, s=0.5)
+    plt.savefig(figurePath + plotname + ".pdf")
+
+# ----------------- Figure generation ----------------------
+
+# administrative observation window
+minObsClients = 1000
+maxObsClients = 1150
+
 resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
+# figurePath = figurePath + str(minObsClients) + "-" + str(maxObsClients) + "/"
 
 if not os.path.exists(figurePath):
     os.makedirs(figurePath)
 
-plot(resultPath + 'client_nts_ntp', "Client NTS NTP Total Time", "ms")
-plot(resultPath + 'client_nts_ke', "Client NTS KE Total Time", "ms")
+clientKE = resultPath + 'client_nts_ke'
+clientNTP = resultPath + 'client_nts_ntp'
+serverKE = resultPath + 'server_ntp_enc'
+serverNTP = resultPath + 'server_ke_create'
 
-addClientNums(resultPath + 'server_ntp_enc')
-addClientNums(resultPath + 'server_ke_create')
+plot(clientKE, "Client NTS KE Total Time", "ms")
+plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
-plot(resultPath + 'server_ntp_enc', "Server NTP Encryption", "us")
-plot(resultPath + 'server_ke_create', "Server NTP Cookie Creation", "us")
+addClientNums(serverKE)
+addClientNums(serverNTP)
+
+plot(serverKE, "Server NTP Encryption", "us")
+plot(serverNTP, "Server NTP Cookie Creation", "us")
+
+
+
+plotPseudoCDF(517, clientKE, "Client KE CDF", "ms")

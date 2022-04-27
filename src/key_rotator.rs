@@ -186,7 +186,7 @@ impl KeyRotator {
     /// server doesn't contain a key id it supposed to contain.
     ///
     pub fn rotate(&mut self) -> Result<(), RotateError> {
-        info!(self.logger, "rotating keys");
+        //info(self.logger, "rotating keys");
         // Side-effect. It's not related to the operation.
         ROTATION_COUNTER.inc();
 

@@ -71,7 +71,7 @@ pub fn run_nts_ke_client(
     match client_config.trusted_cert {
         Some(cert) => {
             // experimental setup - we always load a custom cert root
-            // info!(logger, "loading custom trust root");
+            // //info(logger, "loading custom trust root");
             tls_config.root_store.add(&cert)?;
         }
         None => {
@@ -85,7 +85,7 @@ pub fn run_nts_ke_client(
     let hostname = webpki::DNSNameRef::try_from_ascii_str(client_config.host.as_str())
         .expect("server hostname is invalid");
     let mut client = rustls::ClientSession::new(&rc_config, hostname);
-    debug!(logger, "Connecting");
+    //debug!(logger, "Connecting");
     let mut port = DEFAULT_KE_PORT;
     if let Some(p) = client_config.port {
         port = p.parse::<u16>()?;
@@ -126,7 +126,7 @@ pub fn run_nts_ke_client(
     clientrec.append(&mut serialize(end_record));
     tls_stream.write(clientrec)?;
     tls_stream.flush()?;
-    debug!(logger, "Request transmitted");
+    //debug!(logger, "Request transmitted");
     let keys = records::gen_key(tls_stream.sess).unwrap();
 
     let mut state = ReceivedNtsKeRecordState {
@@ -175,11 +175,11 @@ pub fn run_nts_ke_client(
             }
             Err(DeserializeError::UnknownNotCriticalRecord) => {
                 // If it's not critical, just ignore the error.
-                debug!(logger, "unknown record type");
+                //debug!(logger, "unknown record type");
             }
             Err(DeserializeError::UnknownCriticalRecord) => {
                 // TODO: This should propertly handled by sending an Error record.
-                debug!(logger, "error: unknown critical record");
+                //debug!(logger, "error: unknown critical record");
                 return Err(Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     "unknown critical record",
@@ -187,7 +187,7 @@ pub fn run_nts_ke_client(
             }
             Err(DeserializeError::Parsing(error)) => {
                 // TODO: This shouldn't be wrapped as a trait object.
-                debug!(logger, "error: {}", error);
+                //debug!(logger, "error: {}", error);
                 return Err(Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     error,
@@ -195,7 +195,7 @@ pub fn run_nts_ke_client(
             }
         }
     }
-    debug!(logger, "saw the end of the response");
+    //debug!(logger, "saw the end of the response");
     stream.shutdown(Shutdown::Write)?;
 
     let aead_scheme = if state.aead_scheme.is_empty() {

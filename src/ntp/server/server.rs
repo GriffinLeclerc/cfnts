@@ -205,7 +205,7 @@ fn run_server(
 pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::error::Error>> {
     let logger = config.logger().clone();
 
-    info!(logger, "Initializing keys with memcached");
+    //info(logger, "Initializing keys with memcached");
 
     let key_rotator = KeyRotator::connect(
         String::from("/nts/nts-keys"), // prefix
@@ -234,7 +234,7 @@ pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::erro
     let servstate = Arc::new(RwLock::new(servstate_struct));
     match config.upstream_addr.clone() {
         Some(upstream_addr) => {
-            info!(logger, "connecting to upstream");
+            //info(logger, "connecting to upstream");
             let servstate = servstate.clone();
             let rot_logger = logger.new(slog::o!("task"=>"refreshing servstate"));
             let socket = UdpSocket::bind("127.0.0.1:0")?; // we only go to local
@@ -245,14 +245,14 @@ pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::erro
         }
         None => {
             let mut state_guard = servstate.write().unwrap();
-            info!(logger, "setting stratum to 1");
+            //info(logger, "setting stratum to 1");
             (*state_guard).leap = NoLeap;
             (*state_guard).stratum = 1;
         }
     }
 
     if let Some(metrics_config) = config.metrics_config.clone() {
-        info!(logger, "spawning metrics");
+        //info(logger, "spawning metrics");
         let log_metrics = logger.new(slog::o!("component"=>"metrics"));
         thread::spawn(move || {
             metrics::run_metrics(metrics_config, &log_metrics)
@@ -268,7 +268,7 @@ pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::erro
         let logger = logger.new(slog::o!("listen_addr"=>addr));
         let keys = keys.clone();
         let servstate = servstate.clone();
-        info!(logger, "Listening on: {}", socket.local_addr()?);
+        //info(logger, "Listening on: {}", socket.local_addr()?);
         let mut use_ipv4 = true;
         if let SocketAddr::V6(_) = addr {
             use_ipv4 = false;
@@ -557,7 +557,7 @@ fn refresh_servstate(
                         state.refid = packet.header.reference_id;
                         state.refstamp = packet.header.reference_timestamp;
                         state.taken = SystemTime::now();
-                        info!(logger, "set server state with stratum {:}", state.stratum);
+                        //info(logger, "set server state with stratum {:}", state.stratum);
                     }
                     Err(err) => {
                         UPSTREAM_FAILURE_COUNTER.inc();

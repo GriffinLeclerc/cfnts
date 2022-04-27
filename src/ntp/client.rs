@@ -147,11 +147,11 @@ pub fn run_nts_ntp_client(
     let wire_packet = &serialize_nts_packet::<Aes128SivAead>(packet, &mut send_aead);
     let t1 = system_to_ntpfloat(SystemTime::now());
     socket.send(wire_packet)?;
-    debug!(logger, "transmitting packet");
+    //debug!(logger, "transmitting packet");
     let mut buff = [0; BUFF_SIZE];
     let (size, _origin) = socket.recv_from(&mut buff)?;
     let t4 = system_to_ntpfloat(SystemTime::now());
-    debug!(logger, "received packet");
+    //debug!(logger, "received packet");
     let received = parse_nts_packet::<Aes128SivAead>(&buff[0..size], &mut recv_aead);
     match received {
         Err(x) => Err(Box::new(x)),

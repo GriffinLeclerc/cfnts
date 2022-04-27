@@ -211,7 +211,7 @@ impl KeServerConn {
 
         // If we reach the end-of-file, just close the connection.
         if read_count == 0 {
-            info!(self.logger, "eof");
+            //info(self.logger, "eof");
             self.shutdown();
             return;
         }
@@ -234,7 +234,7 @@ impl KeServerConn {
         }
 
         if !buf.is_empty() {
-            debug!(self.logger, "plaintext read {},", buf.len());
+            //debug!(self.logger, "plaintext read {},", buf.len());
             self.ntske_buffer.append(&mut buf);
             let mut reader = &self.ntske_buffer[..];
 
@@ -249,7 +249,7 @@ impl KeServerConn {
             while !self.ntske_state.finished {
                 // need to read 4 bytes to get the header.
                 if reader.len() < HEADER_SIZE {
-                    info!(self.logger, "readable nts-ke stream is not enough to read header");
+                    //info(self.logger, "readable nts-ke stream is not enough to read header");
                     self.ntske_buffer = Vec::from(reader);
                     return;
                 }
@@ -257,7 +257,7 @@ impl KeServerConn {
                 // need to read the body_length to get the body.
                 let body_length = u16::from_be_bytes([reader[2], reader[3]]) as usize;
                 if reader.len() < HEADER_SIZE + body_length {
-                    info!(self.logger, "readable nts-ke stream is not enough to read body");
+                    //info(self.logger, "readable nts-ke stream is not enough to read body");
                     self.ntske_buffer = Vec::from(reader);
                     return;
                 }
@@ -280,17 +280,17 @@ impl KeServerConn {
                     }
                     Err(DeserializeError::UnknownNotCriticalRecord) => {
                         // If it's not critical, just ignore the error.
-                        debug!(self.logger, "unknown record type");
+                        //debug!(self.logger, "unknown record type");
                     }
                     Err(DeserializeError::UnknownCriticalRecord) => {
                         // TODO: This should propertly handled by sending an Error record.
-                        debug!(self.logger, "error: unknown critical record");
+                        //debug!(self.logger, "error: unknown critical record");
                         self.shutdown();
                         return;
                     }
                     Err(DeserializeError::Parsing(error)) => {
                         // TODO: This shouldn't be wrapped as a trait object.
-                        debug!(self.logger, "error: {}", error);
+                        //debug!(self.logger, "error: {}", error);
                         self.shutdown();
                         return;
                     }
