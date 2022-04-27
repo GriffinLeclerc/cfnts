@@ -6,6 +6,9 @@ plotClientNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
+minObsClients = 0
+maxObsClients = 200
+
 def mapInt(num):
     return int(num)
 
@@ -80,6 +83,21 @@ def adjustMeasurements(lists, scale):
             l[i] = val / scalar
             # print(str(l[i]) + scale)
 
+# determine if the desired number of clients is relevant to the plot being made
+def inPlotWindow(num):
+    return num <= minObsClients or num > maxObsClients
+
+def addClientNum(num, lineNum, plotClientNums, relevantClientNums, filename):
+    plotClientNums.append(num)
+    relevantClientNums(filename).append(lineNum)
+
+
+def addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements):
+    meanMeasurements.append(stats.mean(measurements))
+    minMeasurements.append(min(measurements))
+    maxMeasurements.append(max(measurements))
+
+
 # Plot the data
 def plot(filename, plotname, scale):
     file1 = open(filename, 'r')
@@ -93,20 +111,29 @@ def plot(filename, plotname, scale):
     maxMeasurements = []
     plotClientNums.clear()
 
+    plt.figure()
+    plt.gcf().set_size_inches(20, 10)
+
 
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
         # print("line number = " + str(lineNum))
+
+        # print(numClients)
         
         if line.strip() == "":
+            continue
+
+        if "Waiting" in line:
+            # plot a green vertical line at numClients
+            plt.axvline(numClients, color='g')
             continue
 
         if "client(s)" in line:
             if numClients == 0:
                 # no number of clients seen, set it and move on
                 numClients = int(line.replace(" client(s)\n", ""))
-                plotClientNums.append(numClients)
-                relevantClientNums(filename).append(lineNum)
+                addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename)
                 continue
 
             # this line contatins the number of clients for the following measurements 
@@ -114,12 +141,9 @@ def plot(filename, plotname, scale):
                 print("! " + filename + ": Clients: " + str(numClients) + " | numMeasS: " + str(len(measurements)) + " !")
 
             numClients = int(line.replace(" client(s)\n", ""))
-            plotClientNums.append(numClients)
-            relevantClientNums(filename).append(lineNum)
+            addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename)
 
-            meanMeasurements.append(stats.mean(measurements))
-            minMeasurements.append(min(measurements))
-            maxMeasurements.append(max(measurements))
+            addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
             # clear the measurements
             measurements = []
@@ -127,16 +151,15 @@ def plot(filename, plotname, scale):
         else:
             measurements.append(int(line))
 
+
+    # if the server failed, add 0 RTTs to cause alarm
+    if len(measurements) == 0:
+        measurements.append(0)
+    
     # add the last set of measurements
-    meanMeasurements.append(stats.mean(measurements))
-    minMeasurements.append(min(measurements))
-    maxMeasurements.append(max(measurements))
+    addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
     adjustMeasurements([meanMeasurements, minMeasurements, maxMeasurements], scale)
-
-    plt.figure()
-
-    plt.gcf().set_size_inches(10, 5)
 
     plt.plot(plotClientNums, meanMeasurements, 'm', label="Mean")
     plt.plot(plotClientNums, minMeasurements, 'b', label="Min")
@@ -149,7 +172,7 @@ def plot(filename, plotname, scale):
     plt.savefig(figurePath + plotname + ".pdf")
 
 # Figure gen
-resultPath = "results/1250/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 
 if not os.path.exists(figurePath):
