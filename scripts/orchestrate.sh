@@ -31,8 +31,11 @@ done
 echo "Client Online"
 
 # Gather measurements
-ssh -t iol@$s 'bash -s < ./scripts/gather_measurements.sh'
+ssh -t iol@$s 'bash' < ./scripts/gather_measurements.sh
 
+
+
+# pkill ./target/release/cfnts
 
 ssh -t iol@$s sudo reboot
 ssh -t iol@$c sudo reboot
