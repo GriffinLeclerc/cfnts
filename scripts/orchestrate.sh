@@ -7,13 +7,13 @@ echo "Server Online"
 
 (
     # start the KE server
-    ssh -t iol@$s sudo 'bash -s < ./cfnts/scripts/run_ke_server.sh'
+    ssh -t iol@$s sudo 'bash < ./cfnts/scripts/run_ke_server.sh'
 ) &
 disown %1
 
 (
     # start the NTP server
-    ssh -t iol@$s sudo 'bash -s < ./scripts/run_ntp_server.sh'
+    ssh -t iol@$s sudo 'bash < ./scripts/run_ntp_server.sh'
 ) &
 disown %1
 
