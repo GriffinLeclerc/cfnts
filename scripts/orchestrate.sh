@@ -11,12 +11,16 @@ echo "Server Online"
 ) &
 disown %1
 
+# allow keys to populate
+sleep 0.5
+
 (
     # start the NTP server
     ssh -t iol@$s sudo 'bash' < ./scripts/run_ntp_server.sh
 ) &
 disown %1
 
+# allow ntp to start
 sleep 0.5
 
 c=132.177.116.19
