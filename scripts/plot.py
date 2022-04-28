@@ -183,7 +183,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     data = []
 
-    for _, line in enumerate(lines):
+    for lineNum, line in enumerate(lines):
         # if lineNum > 100000:
         #     continue
 
@@ -196,7 +196,6 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
         if "client(s)" in line:
             numClients = int(line.replace(" client(s)\n", ""))
             if numClients == obsNum:
-                print("Hit")
                 hit = True
             else:
                 hit = False
@@ -220,10 +219,10 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 # ----------------- Figure generation ----------------------
 
 # administrative observation window
-minObsClients = 1000
-maxObsClients = 1150
+minObsClients = 100
+maxObsClients = 150
 
-resultPath = "results/"
+resultPath = "results/1019-step1/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsClients) + "-" + str(maxObsClients) + "/"
 
@@ -246,4 +245,9 @@ plot(serverNTP, "Server NTP Cookie Creation", "us")
 
 
 
-plotPseudoCDF(517, clientKE, "Client KE CDF", "ms")
+plotPseudoCDF(100, clientKE, "Client 100 KE CDF", "ms")
+# plotPseudoCDF(150, clientKE, "Client 150 KE CDF", "ms")
+# plotPseudoCDF(200, clientKE, "Client 200 KE CDF", "ms")
+
+# plotPseudoCDF(200, clientNTP, "Client 200 NTP CDF", "ms")
+# plotPseudoCDF(400, clientNTP, "Client 400 NTP CDF", "ms")

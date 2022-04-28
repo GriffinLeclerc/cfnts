@@ -238,7 +238,7 @@ pub fn start_ntp_server(config: NtpServerConfig) -> Result<(), Box<dyn std::erro
             let servstate = servstate.clone();
             let rot_logger = logger.new(slog::o!("task"=>"refreshing servstate"));
             let socket = UdpSocket::bind("127.0.0.1:0")?; // we only go to local
-            socket.set_read_timeout(Some(time::Duration::from_secs(2)))?;
+            socket.set_read_timeout(Some(time::Duration::from_secs(1)))?;
             thread::spawn(move || {
                 refresh_servstate(servstate, rot_logger, socket, &upstream_addr);
             });

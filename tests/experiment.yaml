@@ -1,0 +1,8 @@
+warmup_runs: 10
+
+num_runs: 1
+exchanges_per_cookie: 1
+
+min_clients: 1
+max_clients: 3001
+step_size: 10
