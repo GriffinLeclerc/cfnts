@@ -3,6 +3,8 @@
 echo $(whoami)
 echo $HOSTNAME
 
+cd /home/iol/cfnts 
+
 min_clients=$(yq '.step_size' tests/experiment.yaml)
 
 # start with the minimum number of clients
