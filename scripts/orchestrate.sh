@@ -31,7 +31,7 @@ done
 echo "Client Online"
 
 # Gather measurements
-ssh -t iol@$s 'bash' < ./scripts/gather_measurements.sh
+ssh -t iol@$s 'bash' < ./scripts/gather_measurments.sh
 
 
 
