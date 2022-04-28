@@ -7,7 +7,7 @@ echo "Server Online"
 
 (
     # start the KE server
-    ssh -t iol@$s sudo 'bash' < ./cfnts/scripts/run_ke_server.sh
+    ssh -t iol@$s sudo 'bash' < ./scripts/run_ke_server.sh
 ) &
 disown %1
 
