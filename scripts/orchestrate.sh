@@ -3,8 +3,10 @@ c=132.177.116.19
 
 while true
 do
-    while ! ping -c1 $s &>/dev/null
-            do echo "Waiting"
+    while ! ssh iol@$s 'echo "ping"'
+    do
+        sleep 0.5
+        echo "Trying again..."
     done
     echo "Server Online"
 
@@ -26,8 +28,10 @@ do
     # allow ntp to start
     sleep 0.5
 
-    while ! ping -c1 $c &>/dev/null
-            do echo "Waiting"
+    while ! ssh iol@$c 'echo "ping"'
+    do
+        sleep 0.5
+        echo "Trying again..."
     done
     echo "Client Online"
 
