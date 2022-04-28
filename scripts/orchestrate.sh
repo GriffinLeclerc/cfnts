@@ -5,7 +5,7 @@ while true
 do
     while ! ssh iol@$s 'echo "ping"'
     do
-        sleep 0.5
+        sleep 1
         echo "Trying again..."
     done
     echo "Server Online"
@@ -30,7 +30,7 @@ do
 
     while ! ssh iol@$c 'echo "ping"'
     do
-        sleep 0.5
+        sleep 1
         echo "Trying again..."
     done
     echo "Client Online"
