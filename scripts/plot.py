@@ -220,7 +220,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
 # administrative observation window
 minObsClients = 100
-maxObsClients = 150
+maxObsClients = 5000
 
 resultPath = "results/1019-step1/"
 figurePath = resultPath.replace("results/", "figures/")

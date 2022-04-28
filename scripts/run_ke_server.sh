@@ -1,6 +1,9 @@
 #!/bin/bash
 
-memcached &
+
+cd /home/iol/cfnts
+
+memcached -u root &
 
 python3 scripts/fill-memcached.py
 

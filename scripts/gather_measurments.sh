@@ -10,7 +10,10 @@ num_clients=$(head -n 1 tests/num_clients)
 max_clients=$(yq '.max_clients' tests/experiment.yaml)
 
 if (( num_clients > max_clients )); then
-    # Concluded
+    # Concluded, reset the experiment
+    printf "" > tests/num_clients
+    # and kill the arbiter
+    ssh iol@132.177.116.25 sudo shutdown now
     exit 0
 fi
 
