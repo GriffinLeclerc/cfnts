@@ -140,8 +140,8 @@ def plot(filename, plotname, scale):
                 continue
 
             # this line contatins the number of requests for the following measurements 
-            if numRequests != len(measurements):
-                print("! " + filename + ": Requests: " + str(numRequests) + " | numMeasS: " + str(len(measurements)) + " !")
+            # if numRequests != len(measurements):
+            #     print("! " + filename + ": Requests: " + str(numRequests) + " | numMeasS: " + str(len(measurements)) + " !")
 
             # print("Add data for previous number of requests: " + str(len(measurements)))
             addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements)
@@ -169,9 +169,9 @@ def plot(filename, plotname, scale):
 
     plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
     plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
-    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
+    plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
 
-    plt.xlabel("Number of Concurrent Requests")
+    plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
     plt.legend(loc="upper left")
 
@@ -223,7 +223,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 minObsRequests = 1
 maxObsRequests = 5010
 
-resultPath = "results/"
+resultPath = "results/50-clients-step50/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -238,8 +238,8 @@ serverNTP = resultPath + 'server_ke_create'
 plot(clientKE, "Client NTS KE Total Time", "ms")
 plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
-print(clientKELineNums)
-print(clientNTPLineNums)
+# print(clientKELineNums)
+# print(clientNTPLineNums)
 
 addRequestNums(serverKE)
 addRequestNums(serverNTP)
@@ -249,7 +249,7 @@ plot(serverNTP, "Server NTP Cookie Creation", "us")
 
 
 
-# plotPseudoCDF(100, clientKE, "Request 100 KE CDF", "ms")
+plotPseudoCDF(100, clientKE, "Request 100 KE CDF", "ms")
 # plotPseudoCDF(150, clientKE, "Request 150 KE CDF", "ms")
 # plotPseudoCDF(1000, clientKE, "Request 1000 KE CDF", "ms")
 

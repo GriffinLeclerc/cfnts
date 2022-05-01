@@ -137,7 +137,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
  
     let step_size = experiment_config.get_string("step_size").unwrap().parse::<i32>().unwrap();
 
-    let num_clients = experiment_config.get_string("num_clients").unwrap().parse::<i32>().unwrap();
     let reqs_per_client = experiment_config.get_string("reqs_per_client").unwrap().parse::<i32>().unwrap();
 
     let mut file = File::open("tests/reqs_per_second").unwrap();
@@ -145,7 +144,20 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     file.read_to_string(&mut tmp).expect("Unable to requests per second");
     let mut reqs_per_second = tmp.parse::<i32>().unwrap();
 
+    let mut file = File::open("tests/num_clients").unwrap();
+    let mut tmp = String::new();
+    file.read_to_string(&mut tmp).expect("Unable to number of clients");
+    let mut num_clients = tmp.parse::<i32>().unwrap();
+
     let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
+
+    if inter_request_time < 10.0 {
+        // increase the number of clients for the next run
+        let mut file = File::create("tests/num_clients").unwrap();
+        num_clients += step_size;
+        file.write_all(num_clients.to_string().as_bytes()).expect("Unable to increase the number of clients");
+    }
+
     println!("num_clients {}", num_clients);
     println!("reqs_per_second {}", reqs_per_second);
     println!("IRT {}", inter_request_time);
@@ -178,7 +190,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 // wait on the barrier
                 my_barrier.wait();
 
-                let normal = Normal::new(inter_request_time, 1.0).unwrap();
+                let normal = Normal::new(inter_request_time, 3.0).unwrap();
 
                 // seed each thread with a random wait time
                 let mut prev_exec_time = 0;

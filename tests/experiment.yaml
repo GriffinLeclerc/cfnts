@@ -3,7 +3,7 @@ warmup_runs: 10
 num_runs: 1
 exchanges_per_cookie: 30
 
-num_clients: 50
+starting_num_clients: 50
 reqs_per_client: 20
 
 step_size: 50
