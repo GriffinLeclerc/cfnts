@@ -375,17 +375,18 @@ fn response(
                         let nts_keys = eat_cookie(&cookie.contents, key.as_ref());
                         match nts_keys {
                             Some(nts_dir_keys) => {
+                                res = process_nts(
+                                    resp_header,
+                                    nts_dir_keys,
+                                    cookie_keys.clone(),
+                                    query,
+                                )
 
                                 let end = Instant::now(); 
 
                                 SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
 
-                                Ok(process_nts(
-                                resp_header,
-                                nts_dir_keys,
-                                cookie_keys.clone(),
-                                query,
-                            ))},
+                                Ok(res)},
                             None => {
                                 UNDECRYPTABLE_COOKIE_COUNTER.inc();
                                 error!(logger, "undecryptable cookie with keyid {:x?}", keyid);
