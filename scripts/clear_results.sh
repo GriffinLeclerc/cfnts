@@ -4,4 +4,4 @@ printf "" > results/client_nts_ntp
 printf "" > results/server_ke_create
 printf "" > results/server_ntp_enc
 
-printf "" > tests/num_clients
+printf "" > tests/reqs_per_client
