@@ -86,14 +86,19 @@ def adjustMeasurements(lists, scale):
 def inPlotWindow(numClients):
     return numClients > minObsClients and numClients <= maxObsClients
 
-def addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename):
+def addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, shouldMeasure):
     if inPlotWindow(numClients):
+        if not shouldMeasure:
+            return
         plotClientNums.append(numClients)
         relevantClientNums(filename).append(lineNum)
 
 
 def addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements):
     if inPlotWindow(numClients):
+        if len(measurements) == 0:
+            return
+
         meanMeasurements.append(stats.mean(measurements))
         minMeasurements.append(min(measurements))
         maxMeasurements.append(max(measurements))
@@ -132,19 +137,20 @@ def plot(filename, plotname, scale):
             if numClients == 0:
                 # no number of clients seen, set it and move on
                 numClients = int(line.replace(" client(s)\n", ""))
-                addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename)
+                addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, True)
                 continue
 
             # this line contatins the number of clients for the following measurements 
             if numClients != len(measurements):
-                print("! " + filename + ": Clients: " + str(numClients) + " | numMeasS: " + str(len(measurements)) + " !")
+                # print("! " + filename + ": Clients: " + str(numClients) + " | numMeasS: " + str(len(measurements)) + " !")
+                measurements = []
+                continue
 
             # print("Add data for previous number of clients: " + str(len(measurements)))
             addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
             numClients = int(line.replace(" client(s)\n", ""))
-            addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename)
-
+            addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, len(measurements) != 0)
 
             # clear the measurements
             measurements = []
@@ -155,8 +161,6 @@ def plot(filename, plotname, scale):
     file1.close()
 
     # if the server failed, add 0 RTTs to cause alarm
-    if len(measurements) == 0:
-        measurements.append(0)
 
     plt.figure()
     plt.gcf().set_size_inches(20, 10)
@@ -210,7 +214,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
     plt.figure()
     # plt.yscale("log")
 
-    plt.xlabel("Individual Observation")
+    plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
@@ -219,10 +223,10 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 # ----------------- Figure generation ----------------------
 
 # administrative observation window
-minObsClients = 100
-maxObsClients = 5000
+minObsClients = 1
+maxObsClients = 1299
 
-resultPath = "results/1019-step1/"
+resultPath = "results/1300-step10/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsClients) + "-" + str(maxObsClients) + "/"
 
@@ -247,7 +251,7 @@ plot(serverNTP, "Server NTP Cookie Creation", "us")
 
 plotPseudoCDF(100, clientKE, "Client 100 KE CDF", "ms")
 # plotPseudoCDF(150, clientKE, "Client 150 KE CDF", "ms")
-# plotPseudoCDF(200, clientKE, "Client 200 KE CDF", "ms")
+plotPseudoCDF(1000, clientKE, "Client 1000 KE CDF", "ms")
 
 # plotPseudoCDF(200, clientNTP, "Client 200 NTP CDF", "ms")
 # plotPseudoCDF(400, clientNTP, "Client 400 NTP CDF", "ms")

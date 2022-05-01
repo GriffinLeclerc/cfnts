@@ -30,6 +30,9 @@ use std::sync::{Arc, Barrier};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Read, Write};
+use rand_distr::{Distribution, Normal, NormalError};
+use rand::thread_rng;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct ClientConfig {
@@ -134,14 +137,19 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
  
     let step_size = experiment_config.get_string("step_size").unwrap().parse::<i32>().unwrap();
 
-    let mut file = File::open("tests/num_clients").unwrap();
+    let num_clients = experiment_config.get_string("num_clients").unwrap().parse::<i32>().unwrap();
+    let reqs_per_client = experiment_config.get_string("reqs_per_client").unwrap().parse::<i32>().unwrap();
+
+    let mut file = File::open("tests/reqs_per_second").unwrap();
     let mut tmp = String::new();
-    file.read_to_string(&mut tmp).expect("Unable to read next number of clients");
-    let mut num_clients = tmp.parse::<i32>().unwrap();
+    file.read_to_string(&mut tmp).expect("Unable to requests per second");
+    let mut reqs_per_second = tmp.parse::<i32>().unwrap();
+
+    let inter_request_time: f64 = f64::from(num_clients * (1/reqs_per_second) * 1000); // ms
 
     // Begin experiment
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
-    CLIENT_KE_S.get().clone().unwrap().send(format!("{} client(s)", num_clients)).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
+    CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
 
     // run multiple times
     for _ in 0..num_runs {
@@ -164,65 +172,84 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                 // This should return the clone of `logger` in the main function.
                 let logger = slog_scope::logger();
-
-                let client_config = ClientConfig {
-                    host,
-                    port,
-                    trusted_cert,
-                    use_ipv4,
-                };
-
                 // wait on the barrier
                 my_barrier.wait();
 
-                // KE
-                let start = Instant::now();
+                let normal = Normal::new(inter_request_time, 1.0).unwrap();
 
-                let ke_res = run_nts_ke_client(&logger, client_config);
+                // seed each thread with a random wait time
+                let mut prev_exec_time = 0;
 
-                match ke_res {
-                    Err(err) => {
-                        eprintln!("failure of tls stage: {}", err);
-                        process::exit(1)
-                    }
-                    Ok(_) => {}
-                }
+                // Begin load experiment (loop)
+                for i in 0..reqs_per_client {
+                    let client_config = ClientConfig {
+                        host: host.clone(),
+                        port: port.clone(),
+                        trusted_cert: trusted_cert.clone(),
+                        use_ipv4: use_ipv4.clone(),
+                    };
 
-                let state = ke_res.unwrap();
+                    // sleep a random amount of time
+                    let mut sleep_time = normal.sample(&mut rand::thread_rng()).round() as i32;
 
-                let end = Instant::now();
-                let time_meas_nanos = (end - start).as_nanos().to_string();
+                    sleep_time -= prev_exec_time;
+                    prev_exec_time = 0;
 
-                CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+                    thread::sleep(Duration::from_millis(sleep_time as u64));
 
-                //debug!(logger, "running UDP client with state {:x?}", state);
+                    // Crank the load until it breaks
+                    // Number of clients
 
-                // wait on the barrier
-                my_barrier.wait();
-
-                // NTP
-                // allow for multiple time transfers per cookie
-                for _ in 0..exchanges_per_cookie {
+                    // KE
                     let start = Instant::now();
 
-                    let res = run_nts_ntp_client(&logger, state.clone());
+                    let ke_res = run_nts_ke_client(&logger, client_config);
+
+                    match ke_res {
+                        Err(err) => {
+                            eprintln!("failure of tls stage: {}", err);
+                            process::exit(1)
+                        }
+                        Ok(_) => {}
+                    }
+
+                    let state = ke_res.unwrap();
 
                     let end = Instant::now();
-                    let time_meas_nanos = (end - start).as_nanos().to_string();
+                    let time_meas = end - start;
+                    let time_meas_nanos = time_meas.as_nanos();
+                    prev_exec_time += time_meas.as_millis() as i32;
 
-                    CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos).expect("unable to write to channel.");
+                    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                    // match res {
-                    //     Err(err) => {
-                    //         eprintln!("failure of client: {}", err);
-                    //         process::exit(1)
-                    //     }
-                    //     Ok(_) => {
-                    //         // no prints, assume proper
-                    //         // println!("stratum: {:}", _result.stratum);
-                    //         // println!("offset: {:.6}", _result.time_diff);
-                    //     }
-                    // }
+                    //debug!(logger, "running UDP client with state {:x?}", state);
+
+                    // NTP
+                    // allow for multiple time transfers per cookie
+                    for _ in 0..exchanges_per_cookie {
+                        let start = Instant::now();
+
+                        let res = run_nts_ntp_client(&logger, state.clone());
+
+                        let end = Instant::now();
+                        let time_meas = end - start;
+                        let time_meas_nanos = time_meas.as_nanos();
+                        prev_exec_time += time_meas.as_millis() as i32;
+
+                        CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+
+                        // match res {
+                        //     Err(err) => {
+                        //         eprintln!("failure of client: {}", err);
+                        //         process::exit(1)
+                        //     }
+                        //     Ok(_) => {
+                        //         // no prints, assume proper
+                        //         // println!("stratum: {:}", _result.stratum);
+                        //         // println!("offset: {:.6}", _result.time_diff);
+                        //     }
+                        // }
+                    }
                 }
             }));
 
@@ -235,8 +262,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     }
 
     // step
-    let mut file = File::create("tests/num_clients").unwrap();
-    num_clients += step_size;
-    file.write_all(num_clients.to_string().as_bytes()).expect("Unable to write next run");
+    let mut file = File::create("tests/reqs_per_second").unwrap();
+    reqs_per_second += step_size;
+    file.write_all(reqs_per_second.to_string().as_bytes()).expect("Unable to write next run");
     
 }
