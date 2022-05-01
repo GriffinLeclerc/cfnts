@@ -2,7 +2,7 @@ import statistics as stats
 import matplotlib.pyplot as plt
 import os
 
-plotClientNums = []
+plotRequestNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
@@ -19,24 +19,24 @@ def cullOutliers(data):
 
     return newData
 
-def relevantClientNums(filename):
+def relevantRequestNums(filename):
     if "ke" in filename:
         return clientKELineNums
     else:
         return clientNTPLineNums
 
-# determines if the file in question has client number delimiters
-def hasClientNums(filename):
+# determines if the file in question has request number delimiters
+def hasRequestNums(filename):
     with open(filename, 'r') as file:
-        if "client" in file.read():
+        if "request" in file.read():
             return True
     return False
 
-# The server side measurements do not know how many clients there are
-# add that info to their results at known offsets based on the client measurements
-def addClientNums(filename):
+# The server side measurements do not know how many requests there are
+# add that info to their results at known offsets based on the request measurements
+def addRequestNums(filename):
     # don't add them if they're already there
-    if hasClientNums(filename):
+    if hasRequestNums(filename):
         return
 
     lines = []
@@ -58,8 +58,8 @@ def addClientNums(filename):
                 warmupRuns -= 1
                 continue;
             
-            if curLineNum in relevantClientNums(filename):
-                delimeter = str(plotClientNums[index]) + " client(s)\n"
+            if curLineNum in relevantRequestNums(filename):
+                delimeter = str(plotRequestNums[index]) + " total request(s) per second\n"
                 file.write(delimeter)
                 curLineNum += 1
                 index += 1
@@ -82,23 +82,22 @@ def adjustMeasurements(lists, scale):
     for l in lists:
         adjustMeasurement(l, scale)
 
-# determine if the desired number of clients is relevant to the plot being made
-def inPlotWindow(numClients):
-    return numClients > minObsClients and numClients <= maxObsClients
+# determine if the desired number of requests is relevant to the plot being made
+def inPlotWindow(numRequests):
+    return numRequests > minObsRequests and numRequests <= maxObsRequests
 
-def addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, shouldMeasure):
-    if inPlotWindow(numClients):
+def addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, shouldMeasure):
+    if inPlotWindow(numRequests):
         if not shouldMeasure:
             return
-        plotClientNums.append(numClients)
-        relevantClientNums(filename).append(lineNum)
+        plotRequestNums.append(numRequests)
+        relevantRequestNums(filename).append(lineNum)
 
 
-def addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements):
-    if inPlotWindow(numClients):
+def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements):
+    if inPlotWindow(numRequests):
         if len(measurements) == 0:
             return
-
         meanMeasurements.append(stats.mean(measurements))
         minMeasurements.append(min(measurements))
         maxMeasurements.append(max(measurements))
@@ -109,48 +108,46 @@ def plot(filename, plotname, scale):
     file1 = open(filename, 'r')
     data = file1.readlines()
 
-    numClients = 0
+    numRequests = 0
     measurements = []
 
     meanMeasurements = []
     minMeasurements = []
     maxMeasurements = []
-    plotClientNums.clear()
+    plotRequestNums.clear()
 
 
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
         # print("line number = " + str(lineNum))
 
-        # print(numClients)
+        # print(numRequests)
         
         if line.strip() == "":
             continue
 
         if "Waiting" in line:
-            # plot a green vertical line at numClients
-            if inPlotWindow(numClients):
-                plt.axvline(numClients, color='g')
+            # plot a green vertical line at numRequests
+            if inPlotWindow(numRequests):
+                plt.axvline(numRequests, color='g')
             continue
 
-        if "client(s)" in line:
-            if numClients == 0:
-                # no number of clients seen, set it and move on
-                numClients = int(line.replace(" client(s)\n", ""))
-                addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, True)
+        if "request(s)" in line:
+            if numRequests == 0:
+                # no number of requests seen, set it and move on
+                numRequests = int(line.replace(" total request(s) per second\n", ""))
+                addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, True)
                 continue
 
-            # this line contatins the number of clients for the following measurements 
-            if numClients != len(measurements):
-                # print("! " + filename + ": Clients: " + str(numClients) + " | numMeasS: " + str(len(measurements)) + " !")
-                measurements = []
-                continue
+            # this line contatins the number of requests for the following measurements 
+            if numRequests != len(measurements):
+                print("! " + filename + ": Requests: " + str(numRequests) + " | numMeasS: " + str(len(measurements)) + " !")
 
-            # print("Add data for previous number of clients: " + str(len(measurements)))
-            addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
+            # print("Add data for previous number of requests: " + str(len(measurements)))
+            addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
-            numClients = int(line.replace(" client(s)\n", ""))
-            addClientNum(numClients, lineNum, plotClientNums, relevantClientNums, filename, len(measurements) != 0)
+            numRequests = int(line.replace(" total request(s) per second\n", ""))
+            addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, len(measurements) != 0)
 
             # clear the measurements
             measurements = []
@@ -166,15 +163,15 @@ def plot(filename, plotname, scale):
     plt.gcf().set_size_inches(20, 10)
     
     # add the last set of measurements
-    addDataPoint(numClients, measurements, meanMeasurements, minMeasurements, maxMeasurements)
+    addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements)
 
     adjustMeasurements([meanMeasurements, minMeasurements, maxMeasurements], scale)
 
-    plt.plot(plotClientNums, meanMeasurements, 'm', label="Mean")
-    plt.plot(plotClientNums, minMeasurements, 'b', label="Min")
-    plt.plot(plotClientNums, maxMeasurements, 'r', label="Max")
+    plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
+    plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
+    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
 
-    plt.xlabel("Number of Concurrent Clients")
+    plt.xlabel("Number of Concurrent Requests")
     plt.ylabel("Total Operational Time (" + scale + ")")
     plt.legend(loc="upper left")
 
@@ -197,9 +194,9 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
         if "Waiting" in line:
             continue
 
-        if "client(s)" in line:
-            numClients = int(line.replace(" client(s)\n", ""))
-            if numClients == obsNum:
+        if "request(s)" in line:
+            numRequests = int(line.replace(" total request(s) per second\n", ""))
+            if numRequests == obsNum:
                 hit = True
             else:
                 hit = False
@@ -223,12 +220,12 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 # ----------------- Figure generation ----------------------
 
 # administrative observation window
-minObsClients = 1
-maxObsClients = 1299
+minObsRequests = 1
+maxObsRequests = 5010
 
-resultPath = "results/1300-step10/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
-# figurePath = figurePath + str(minObsClients) + "-" + str(maxObsClients) + "/"
+# figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
 if not os.path.exists(figurePath):
     os.makedirs(figurePath)
@@ -241,17 +238,20 @@ serverNTP = resultPath + 'server_ke_create'
 plot(clientKE, "Client NTS KE Total Time", "ms")
 plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
-addClientNums(serverKE)
-addClientNums(serverNTP)
+print(clientKELineNums)
+print(clientNTPLineNums)
+
+addRequestNums(serverKE)
+addRequestNums(serverNTP)
 
 plot(serverKE, "Server NTP Encryption", "us")
 plot(serverNTP, "Server NTP Cookie Creation", "us")
 
 
 
-plotPseudoCDF(100, clientKE, "Client 100 KE CDF", "ms")
-# plotPseudoCDF(150, clientKE, "Client 150 KE CDF", "ms")
-plotPseudoCDF(1000, clientKE, "Client 1000 KE CDF", "ms")
+# plotPseudoCDF(100, clientKE, "Request 100 KE CDF", "ms")
+# plotPseudoCDF(150, clientKE, "Request 150 KE CDF", "ms")
+# plotPseudoCDF(1000, clientKE, "Request 1000 KE CDF", "ms")
 
-# plotPseudoCDF(200, clientNTP, "Client 200 NTP CDF", "ms")
-# plotPseudoCDF(400, clientNTP, "Client 400 NTP CDF", "ms")
+# plotPseudoCDF(200, clientNTP, "Request 200 NTP CDF", "ms")
+# plotPseudoCDF(400, clientNTP, "Request 400 NTP CDF", "ms")
