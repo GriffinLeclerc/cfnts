@@ -375,12 +375,12 @@ fn response(
                         let nts_keys = eat_cookie(&cookie.contents, key.as_ref());
                         match nts_keys {
                             Some(nts_dir_keys) => {
-                                res = process_nts(
+                                let res = process_nts(
                                     resp_header,
                                     nts_dir_keys,
                                     cookie_keys.clone(),
                                     query,
-                                )
+                                );
 
                                 let end = Instant::now(); 
 
