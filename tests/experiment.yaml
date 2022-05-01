@@ -4,6 +4,6 @@ num_runs: 1
 exchanges_per_cookie: 30
 
 num_clients: 10
-reqs_per_client: 5000
+reqs_per_client: 20
 
 step_size: 10

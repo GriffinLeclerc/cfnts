@@ -145,7 +145,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     file.read_to_string(&mut tmp).expect("Unable to requests per second");
     let mut reqs_per_second = tmp.parse::<i32>().unwrap();
 
-    let inter_request_time: f64 = f64::from(num_clients * (1/reqs_per_second) * 1000); // ms
+    let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
+    println!("num_clients {}", num_clients);
+    println!("reqs_per_second {}", reqs_per_second);
+    println!("IRT {}", inter_request_time);
 
     // Begin experiment
     CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
@@ -195,7 +198,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     sleep_time -= prev_exec_time;
                     prev_exec_time = 0;
 
-                    thread::sleep(Duration::from_millis(sleep_time as u64));
+                    // println!("Sleep millis: {}", sleep_time.abs());
+
+                    thread::sleep(Duration::from_millis(sleep_time.abs() as u64));
 
                     // Crank the load until it breaks
                     // Number of clients
