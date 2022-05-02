@@ -137,7 +137,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
  
     let step_size = experiment_config.get_string("step_size").unwrap().parse::<i32>().unwrap();
 
-    let reqs_per_client = experiment_config.get_string("reqs_per_client").unwrap().parse::<i32>().unwrap();
+    let iterations_per_client = experiment_config.get_string("iterations_per_client").unwrap().parse::<i32>().unwrap();
 
     let mut file = File::open("tests/reqs_per_second").unwrap();
     let mut tmp = String::new();
@@ -196,7 +196,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 let mut prev_exec_time = 0;
 
                 // Begin load experiment (loop)
-                for i in 0..reqs_per_client {
+                for _ in 0..iterations_per_client {
                     let client_config = ClientConfig {
                         host: host.clone(),
                         port: port.clone(),

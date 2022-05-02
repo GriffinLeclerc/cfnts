@@ -40,6 +40,7 @@ pub static CLIENT_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell:
 
 pub static SERVER_KE_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 pub static SERVER_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
+pub static SERVER_NTS_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 
 /// Create a logger to be used throughout cfnts.
 fn create_logger<'a>(matches: &clap::ArgMatches<'a>) -> slog::Logger {
@@ -87,94 +88,112 @@ fn main() {
         process::exit(1);
     }
 
-    // Client KE
-    // create the channel
-    let (client_ke_s, client_ke_r) = unbounded();
-    // populate the once cell
-    CLIENT_KE_S.set(client_ke_s).expect("unable to fill once cell.");
-    // make a thread for writing client_ke meas
-    thread::spawn(move || {
-        let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/client_nts_ke")
-        .expect("Unable to create file");
-
-        loop {
-            // get and write measurements
-            let value = client_ke_r.recv().unwrap();
-            writeln!(f, "{}", value).expect("Unable to write file");
-        }
-    });
-
-    // Client NTP
-    // create the channel
-    let (client_ntp_s, client_ntp_r) = unbounded();
-    // populate the once cell
-    CLIENT_NTP_S.set(client_ntp_s).expect("unable to fill once cell.");
-    // make a thread for writing client_ke meas
-    thread::spawn(move || {
-        let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/client_nts_ntp")
-        .expect("Unable to create file");
-
-        loop {
-            // get and write measurements
-            let value = client_ntp_r.recv().unwrap();
-            writeln!(f, "{}", value).expect("Unable to write file");
-        }
-    });
-
-    // Server KE
-    // create the channel
-    let (server_ke_s, server_ke_r) = unbounded();
-    // populate the once cell
-    SERVER_KE_S.set(server_ke_s).expect("unable to fill once cell.");
-    // make a thread for writing client_ke meas
-    thread::spawn(move || {
-        let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/server_ke_create")
-        .expect("Unable to create file");
-
-        loop {
-            // get and write measurements
-            let value = server_ke_r.recv().unwrap();
-            writeln!(f, "{}", value).expect("Unable to write file");
-        }
-    });
-
-    // Server NTP
-    // create the channel
-    let (server_ntp_s, server_ntp_r) = unbounded();
-    // populate the once cell
-    SERVER_NTP_S.set(server_ntp_s).expect("unable to fill once cell.");
-    // make a thread for writing client_ke meas
-    thread::spawn(move || {
-        let mut f = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open("results/server_ntp_enc")
-        .expect("Unable to create file");
-
-        loop {
-            // get and write measurements
-            let value = server_ntp_r.recv().unwrap();
-            writeln!(f, "{}", value).expect("Unable to write file");
-        }
-    });
-
-
     if let Some(ke_server_matches) = matches.subcommand_matches("ke-server") {
+        // Server KE
+        // create the channel
+        let (server_ke_s, server_ke_r) = unbounded();
+        // populate the once cell
+        SERVER_KE_S.set(server_ke_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/server_ke_create")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = server_ke_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
+
         sub_command::ke_server::run(ke_server_matches);
     }
     if let Some(ntp_server_matches) = matches.subcommand_matches("ntp-server") {
+        // Server NTP
+        // create the channel
+        let (server_ntp_s, server_ntp_r) = unbounded();
+        // populate the once cell
+        SERVER_NTP_S.set(server_ntp_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/server_ntp_alone")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = server_ntp_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
+
+        // Server NTS
+        // create the channel
+        let (server_nts_s, server_nts_r) = unbounded();
+        // populate the once cell
+        SERVER_NTS_S.set(server_nts_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/server_nts_auth")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = server_nts_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
         sub_command::ntp_server::run(ntp_server_matches);
     }
     if let Some(client_matches) = matches.subcommand_matches("client") {
+        // Client KE
+        // create the channel
+        let (client_ke_s, client_ke_r) = unbounded();
+        // populate the once cell
+        CLIENT_KE_S.set(client_ke_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/client_nts_ke")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = client_ke_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
+
+        // Client NTP
+        // create the channel
+        let (client_ntp_s, client_ntp_r) = unbounded();
+        // populate the once cell
+        CLIENT_NTP_S.set(client_ntp_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/client_nts_ntp")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = client_ntp_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
+
         sub_command::client::run(client_matches);
     }
 }

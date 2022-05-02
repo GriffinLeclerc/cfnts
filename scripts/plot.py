@@ -181,11 +181,11 @@ def plot(filename, plotname, scale):
 def plotPseudoCDF(obsNum, filename, plotname, scale):
     file1 = open(filename, 'r')
     lines = file1.readlines()
-
+    
     data = []
 
     for lineNum, line in enumerate(lines):
-        # if lineNum > 100000:
+        # if lineNum > 4000:
         #     continue
 
         if line.strip() == "":
@@ -211,8 +211,10 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
     plt.figure()
     # plt.yscale("log")
 
-    plt.xlabel("Number of Requests Per Second")
+    plt.xlabel("Individual Observation")
     plt.ylabel("Total Operational Time (" + scale + ")")
+
+    # data = data[:900]
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
     plt.savefig(figurePath + plotname + ".pdf")
@@ -221,9 +223,9 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
 # administrative observation window
 minObsRequests = 1
-maxObsRequests = 5010
+maxObsRequests = 1000000000
 
-resultPath = "results/50-clients-step50/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -235,8 +237,10 @@ clientNTP = resultPath + 'client_nts_ntp'
 serverKE = resultPath + 'server_ntp_enc'
 serverNTP = resultPath + 'server_ke_create'
 
-plot(clientKE, "Client NTS KE Total Time", "ms")
-plot(clientNTP, "Client NTS NTP Total Time", "ms")
+# plot(clientKE, "Client NTS KE Total Time", "ms")
+# plot(clientNTP, "Client NTS NTP Total Time", "ms")
+
+print("Client plots complete")
 
 # print(clientKELineNums)
 # print(clientNTPLineNums)
@@ -244,14 +248,24 @@ plot(clientNTP, "Client NTS NTP Total Time", "ms")
 addRequestNums(serverKE)
 addRequestNums(serverNTP)
 
-plot(serverKE, "Server NTP Encryption", "us")
-plot(serverNTP, "Server NTP Cookie Creation", "us")
+print("Client numbers added to server files complete")
+
+# plot(serverKE, "Server NTP Encryption", "us")
+# plot(serverNTP, "Server NTP Cookie Creation", "us")
+
+print("Server plots complete")
 
 
-
-plotPseudoCDF(100, clientKE, "Request 100 KE CDF", "ms")
+numReq = 20050
+# plotPseudoCDF(numReq, clientKE, "Request " + str(numReq) + " KE CDF", "ms")
+plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
 # plotPseudoCDF(150, clientKE, "Request 150 KE CDF", "ms")
 # plotPseudoCDF(1000, clientKE, "Request 1000 KE CDF", "ms")
 
+numReq = 200
+plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
+
 # plotPseudoCDF(200, clientNTP, "Request 200 NTP CDF", "ms")
 # plotPseudoCDF(400, clientNTP, "Request 400 NTP CDF", "ms")
+
+print("\"CDF\" plots complete")

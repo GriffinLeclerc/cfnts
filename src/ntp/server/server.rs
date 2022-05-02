@@ -340,6 +340,7 @@ fn create_header(
 use std::time::Instant;
 
 use crate::SERVER_NTP_S;
+use crate::SERVER_NTS_S;
 
 
 fn response(
@@ -350,6 +351,8 @@ fn response(
     servstate: Arc<RwLock<ServerState>>,
     logger: slog::Logger,
 ) -> Result<Vec<u8>, std::io::Error> {
+    let start = Instant::now();
+
     let query_packet = parse_ntp_packet(query)?; // Should try to send a KOD if this happens
     let resp_header = create_header(&query_packet, r_time, t_time, servstate);
 
@@ -358,6 +361,9 @@ fn response(
     if query_packet.header.mode != PacketMode::Client {
         return Err(Error::new(ErrorKind::InvalidData, "not client mode"));
     }
+
+    let end = Instant::now(); 
+    SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
 
     if is_nts_packet(&query_packet) {
 
@@ -384,7 +390,7 @@ fn response(
 
                                 let end = Instant::now(); 
 
-                                SERVER_NTP_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
+                                SERVER_NTS_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
 
                                 Ok(res)},
                             None => {
