@@ -33,6 +33,10 @@ use std::io::{Read, Write};
 use rand_distr::{Distribution, Normal, NormalError};
 use rand::thread_rng;
 use std::time::Duration;
+use std::sync::atomic::{AtomicI32, Ordering};
+
+pub static TRUE_KE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static TRUE_NTP: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug)]
 pub struct ClientConfig {
@@ -163,8 +167,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     println!("IRT {}", inter_request_time);
 
     // Begin experiment
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second * &exchanges_per_cookie)).expect("unable to write to channel.");
     CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
+
+    let true_start = Instant::now();
 
     // run multiple times
     for _ in 0..num_runs {
@@ -221,6 +227,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     let start = Instant::now();
 
                     let ke_res = run_nts_ke_client(&logger, client_config);
+                    TRUE_KE.fetch_add(1, Ordering::SeqCst);
 
                     match ke_res {
                         Err(err) => {
@@ -247,6 +254,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                         let start = Instant::now();
 
                         let res = run_nts_ntp_client(&logger, state.clone());
+                        TRUE_NTP.fetch_add(1, Ordering::SeqCst);
 
                         let end = Instant::now();
                         let time_meas = end - start;
@@ -255,17 +263,17 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                         CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                        // match res {
-                        //     Err(err) => {
-                        //         eprintln!("failure of client: {}", err);
-                        //         process::exit(1)
-                        //     }
-                        //     Ok(_) => {
-                        //         // no prints, assume proper
-                        //         // println!("stratum: {:}", _result.stratum);
-                        //         // println!("offset: {:.6}", _result.time_diff);
-                        //     }
-                        // }
+                        match res {
+                            Err(err) => {
+                                eprintln!("failure of client: {}", err);
+                                process::exit(1)
+                            }
+                            Ok(_) => {
+                                // no output, assume proper
+                                // println!("stratum: {:}", _result.stratum);
+                                // println!("offset: {:.6}", _result.time_diff);
+                            }
+                        }
                     }
                 }
             }));
@@ -276,6 +284,15 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         for handle in join_handles.into_iter() { 
             handle.join().unwrap();
         }
+
+        let true_end = Instant::now();
+        let true_diff = (true_end - true_start).as_secs() as f64;
+
+        let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
+        CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+
+        let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
     }
 
     // step
