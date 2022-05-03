@@ -6,6 +6,8 @@ plotRequestNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
+percentagesGreaterThan5s = []
+
 def mapInt(num):
     return int(num)
 
@@ -87,21 +89,27 @@ def inPlotWindow(numRequests):
     return numRequests > minObsRequests and numRequests <= maxObsRequests
 
 def addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, shouldMeasure):
+    relevantRequestNums(filename).append(lineNum)
+
     if inPlotWindow(numRequests):
         if not shouldMeasure:
             return
         plotRequestNums.append(numRequests)
-        relevantRequestNums(filename).append(lineNum)
 
-
-def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements):
+def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements):
     if inPlotWindow(numRequests):
         if len(measurements) == 0:
             return
+        
+        measurements.sort()
+
         meanMeasurements.append(stats.mean(measurements))
         minMeasurements.append(min(measurements))
+        twentyfifthMeasurements.append(stats.mean(measurements[:round(len(measurements) * 0.25)]))
+        medianMeasurements.append(stats.mean(measurements[:round(len(measurements) * 0.50)]))
+        seventyfifthMeasurements.append(stats.mean(measurements[:round(len(measurements) * 0.75)]))
+        ninetiethMeasurements.append(stats.mean(measurements[:round(len(measurements) * 0.95)]))
         maxMeasurements.append(max(measurements))
-
 
 # Plot the data
 def plot(filename, plotname, scale):
@@ -113,9 +121,12 @@ def plot(filename, plotname, scale):
 
     meanMeasurements = []
     minMeasurements = []
+    twentyfifthMeasurements = []
+    medianMeasurements = []
+    seventyfifthMeasurements = []
+    ninetiethMeasurements = []
     maxMeasurements = []
     plotRequestNums.clear()
-
 
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
@@ -124,12 +135,6 @@ def plot(filename, plotname, scale):
         # print(numRequests)
         
         if line.strip() == "":
-            continue
-
-        if "Waiting" in line:
-            # plot a green vertical line at numRequests
-            if inPlotWindow(numRequests):
-                plt.axvline(numRequests, color='g')
             continue
 
         if "request(s)" in line:
@@ -144,10 +149,17 @@ def plot(filename, plotname, scale):
             #     print("! " + filename + ": Requests: " + str(numRequests) + " | numMeasS: " + str(len(measurements)) + " !")
 
             # print("Add data for previous number of requests: " + str(len(measurements)))
-            addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements)
+            addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
 
             numRequests = int(line.replace(" total request(s) per second\n", ""))
             addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, len(measurements) != 0)
+
+            count = 0
+            for m in measurements:
+                if m > 5000000000:
+                    count += 1
+            
+            percentagesGreaterThan5s.append(count / len(measurements))
 
             # clear the measurements
             measurements = []
@@ -163,13 +175,18 @@ def plot(filename, plotname, scale):
     plt.gcf().set_size_inches(20, 10)
     
     # add the last set of measurements
-    addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, maxMeasurements)
+    addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
 
-    adjustMeasurements([meanMeasurements, minMeasurements, maxMeasurements], scale)
+    adjustMeasurements([meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements], scale)
 
     plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
+    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
+
     plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
-    plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
+    plt.plot(plotRequestNums, twentyfifthMeasurements, label="25th Percentile")
+    plt.plot(plotRequestNums, medianMeasurements, 'g', label="Median")
+    plt.plot(plotRequestNums, seventyfifthMeasurements, label="75th Percentile")
+    plt.plot(plotRequestNums, ninetiethMeasurements, 'r',  label="95th Percentile")
 
     plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
@@ -190,9 +207,6 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
         if line.strip() == "":
                 continue
-
-        if "Waiting" in line:
-            continue
 
         if "request(s)" in line:
             numRequests = int(line.replace(" total request(s) per second\n", ""))
@@ -234,36 +248,31 @@ if not os.path.exists(figurePath):
 
 clientKE = resultPath + 'client_nts_ke'
 clientNTP = resultPath + 'client_nts_ntp'
-serverKE = resultPath + 'server_ntp_enc'
-serverNTP = resultPath + 'server_ke_create'
+serverKE = resultPath + 'server_ke_create'
+serverNTP = resultPath + 'server_ntp_alone'
+serverNTS = resultPath + 'server_nts_auth'
 
-# plot(clientKE, "Client NTS KE Total Time", "ms")
-# plot(clientNTP, "Client NTS NTP Total Time", "ms")
+plot(clientKE, "Client NTS KE Total Time", "ms")
+plot(clientNTP, "Client NTS NTP Total Time", "ms")
+
+print(percentagesGreaterThan5s)
 
 print("Client plots complete")
 
-# print(clientKELineNums)
-# print(clientNTPLineNums)
-
 addRequestNums(serverKE)
 addRequestNums(serverNTP)
+addRequestNums(serverNTS)
 
-print("Client numbers added to server files complete")
+# print("Client numbers added to server files complete")
 
-# plot(serverKE, "Server NTP Encryption", "us")
-# plot(serverNTP, "Server NTP Cookie Creation", "us")
+plot(serverKE, "Server NTS Key Creation", "us")
+plot(serverNTP, "Server NTP Header Creation", "ns")
+plot(serverNTS, "Server NTS Packet Creation", "us")
 
 print("Server plots complete")
 
-
-numReq = 20050
-# plotPseudoCDF(numReq, clientKE, "Request " + str(numReq) + " KE CDF", "ms")
-plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
-# plotPseudoCDF(150, clientKE, "Request 150 KE CDF", "ms")
-# plotPseudoCDF(1000, clientKE, "Request 1000 KE CDF", "ms")
-
 numReq = 200
-plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
+# plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
 
 # plotPseudoCDF(200, clientNTP, "Request 200 NTP CDF", "ms")
 # plotPseudoCDF(400, clientNTP, "Request 400 NTP CDF", "ms")
