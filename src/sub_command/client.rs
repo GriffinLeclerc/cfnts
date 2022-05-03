@@ -167,8 +167,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     println!("IRT {}", inter_request_time);
 
     // Begin experiment
-    // CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second * &exchanges_per_cookie)).expect("unable to write to channel.");
-    // CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second * &exchanges_per_cookie)).expect("unable to write to channel.");
+    CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
 
     let true_start = Instant::now();
 
@@ -244,7 +244,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     let time_meas_nanos = time_meas.as_nanos();
                     prev_exec_time += time_meas.as_millis() as i32;
 
-                    // CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+                    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
                     //debug!(logger, "running UDP client with state {:x?}", state);
 
@@ -261,7 +261,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                         let time_meas_nanos = time_meas.as_nanos();
                         prev_exec_time += time_meas.as_millis() as i32;
 
-                        // CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+                        CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
                         match res {
                             Err(err) => {
@@ -289,10 +289,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         let true_diff = (true_end - true_start).as_secs() as f64;
 
         let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-        // CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+        CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
         let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-        // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
     }
 
     // step
