@@ -113,6 +113,8 @@ def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, t
 
 # Plot the data
 def plot(filename, plotname, scale):
+    print(filename)
+
     file1 = open(filename, 'r')
     data = file1.readlines()
 
@@ -128,6 +130,9 @@ def plot(filename, plotname, scale):
     maxMeasurements = []
     plotRequestNums.clear()
 
+    actual = []
+    desired = []
+
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
         # print("line number = " + str(lineNum))
@@ -135,6 +140,13 @@ def plot(filename, plotname, scale):
         # print(numRequests)
         
         if line.strip() == "":
+            continue
+
+        if "TRUE" in line:
+            trueReqs = float(line.replace("TRUE REQS PER SECOND ", "").replace("\n", ""))
+            # print("Desired: " + str(plotRequestNums[-1]) + " | Obtained: " + trueReqs)
+            desired.append(plotRequestNums[-1])
+            actual.append(trueReqs)
             continue
 
         if "request(s)" in line:
@@ -193,6 +205,14 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
 
     plt.savefig(figurePath + plotname + ".pdf")
+
+    plt.figure()
+    plt.plot(list(range(0, len(actual))), actual, label="Actual")
+    plt.plot(list(range(0, len(desired))), desired, label="Desired")
+    plt.legend(loc="upper left")
+    print(actual)
+    plt.savefig(filename.replace("results/", "figures/") + "Num Measurements" + ".pdf")
+
 
 # Make Pseudo Distribution
 def plotPseudoCDF(obsNum, filename, plotname, scale):
