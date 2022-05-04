@@ -1,6 +1,7 @@
 import statistics as stats
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 plotRequestNums = []
 clientKELineNums = []
@@ -245,6 +246,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
     plt.figure()
     # plt.yscale("log")
 
+    plt.title(plotname)
     plt.xlabel("Individual Observation")
     plt.ylabel("Total Operational Time (" + scale + ")")
 
@@ -252,6 +254,45 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
     plt.savefig(figurePath + plotname + ".pdf")
+
+
+def plotCDF(filename, plotname, scale):
+    file1 = open(filename, 'r')
+    lines = file1.readlines()
+
+    data = []
+
+    for lineNum, line in enumerate(lines):
+        if line.strip() == "":
+                continue
+
+        if "request(s)" in line:
+            continue
+        else:
+            data.append(int(line))
+
+    adjustMeasurement(data, scale)
+
+    n_bins = 50
+    x = data
+
+    plt.figure()
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # plot the cumulative histogram
+    n, bins, patches = ax.hist(x, n_bins, density=True, histtype='step',
+                            cumulative=True, label='Empirical')
+
+    ax.grid(True)
+    ax.legend(loc='right')
+    ax.set_title(plotname)
+    ax.set_xlabel("Total Operational Time (" + scale + ")")
+    ax.set_ylabel('Likelihood of occurrence')
+    
+    plt.savefig(figurePath + plotname + ".pdf")
+
+
 
 # ----------------- Figure generation ----------------------
 
@@ -271,6 +312,13 @@ clientNTP = resultPath + 'client_nts_ntp'
 serverKE = resultPath + 'server_ke_create'
 serverNTP = resultPath + 'server_ntp_alone'
 serverNTS = resultPath + 'server_nts_auth'
+
+singleClient = True
+if singleClient:
+    plotPseudoCDF(1, clientNTP, "Client NTS Pseudo CDF", "ms")
+    plotCDF(clientNTP, "Client NTS CDF", "ms")
+    exit(0)
+
 
 plot(clientKE, "Client NTS KE Total Time", "ms")
 plot(clientNTP, "Client NTS NTP Total Time", "ms")

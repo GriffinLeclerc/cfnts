@@ -218,6 +218,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                     // println!("Sleep millis: {}", sleep_time.abs());
 
+                    CLIENT_KE_S.get().clone().unwrap().send(format!("Sleeping for ms: {}", sleep_time.abs() as u64)).expect("unable to write to channel.");
+
+                    
+
                     thread::sleep(Duration::from_millis(sleep_time.abs() as u64));
 
                     // Crank the load until it breaks
@@ -289,10 +293,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
 
         let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-        // CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+        CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
         let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-        // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
     }
 
     // step
