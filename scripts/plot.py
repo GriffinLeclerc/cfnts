@@ -282,10 +282,9 @@ def plotCDF(filename, plotname, scale):
 
     # plot the cumulative histogram
     n, bins, patches = ax.hist(x, n_bins, density=True, histtype='step',
-                            cumulative=True, label='Empirical')
+                            cumulative=True, align='left')
 
     ax.grid(True)
-    ax.legend(loc='right')
     ax.set_title(plotname)
     ax.set_xlabel("Total Operational Time (" + scale + ")")
     ax.set_ylabel('Likelihood of occurrence')
@@ -300,7 +299,7 @@ def plotCDF(filename, plotname, scale):
 minObsRequests = 1
 maxObsRequests = 1000000000
 
-resultPath = "results/"
+resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -315,8 +314,16 @@ serverNTS = resultPath + 'server_nts_auth'
 
 singleClient = True
 if singleClient:
+    plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
+    plotCDF(clientKE, "Client KE CDF", "ms")
+
     plotPseudoCDF(1, clientNTP, "Client NTS Pseudo CDF", "ms")
     plotCDF(clientNTP, "Client NTS CDF", "ms")
+
+
+    plotCDF(serverNTP, "Server NTP CDF", "us")
+    plotCDF(serverNTS, "Server NTS CDF", "us")
+    plotCDF(serverKE, "Server KE CDF", "us")
     exit(0)
 
 

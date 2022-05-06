@@ -33,7 +33,8 @@ use std::io::{Read, Write};
 use rand_distr::{Distribution, Normal, NormalError};
 use rand::thread_rng;
 use std::time::Duration;
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, Ordering, AtomicUsize};
+use threadpool::ThreadPool;
 
 pub static TRUE_KE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 pub static TRUE_NTP: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
@@ -88,6 +89,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         }
     }   
 
+    // Begin experiment augmentation
+
     let experiment_config = config::Config::builder()
             .add_source(config::File::with_name("tests/experiment.yaml")).build().expect("Unable to build ntp server config.");
 
@@ -130,18 +133,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         }
     }
     
-    // Params for load testing
-    // for a single client:
-    //      let min_clients = 1;
-    //      let max_clients = 1;
-    //      let step_size = 1;
-
-    let num_runs = experiment_config.get_string("num_runs").unwrap().parse::<i32>().unwrap();
+    let total_requests = experiment_config.get_string("total_requests").unwrap().parse::<i32>().unwrap();
     let exchanges_per_cookie = experiment_config.get_string("exchanges_per_cookie").unwrap().parse::<i32>().unwrap();
  
     let step_size = experiment_config.get_string("step_size").unwrap().parse::<i32>().unwrap();
 
-    let iterations_per_client = experiment_config.get_string("iterations_per_client").unwrap().parse::<i32>().unwrap();
+    // let iterations_per_client = experiment_config.get_string("iterations_per_client").unwrap().parse::<i32>().unwrap();
 
     let mut file = File::open("tests/reqs_per_second").unwrap();
     let mut tmp = String::new();
@@ -172,136 +169,100 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let true_start = Instant::now();
 
-    // run multiple times
-    for _ in 0..num_runs {
-        // track the threads to join them later
-        let mut join_handles: Vec<thread::JoinHandle<()>> = Vec::new();
+    // Spawn a new thread from the pool for each inter request time
+    let pool = ThreadPool::new(num_clients as usize);
 
-        let barrier = Arc::new(Barrier::new(num_clients.try_into().unwrap()));
+    // using multiple clients
+    for _ in 0..total_requests {
+        // need to clone these for thread lifetimes
+        let host = host.clone();
+        let port = port.clone();
+        let trusted_cert = trusted_cert.clone();
 
-        // using multiple clients
-        for _ in 0..num_clients {
-            // need to clone these for thread lifetimes
-            let host = host.clone();
-            let port = port.clone();
-            let trusted_cert = trusted_cert.clone();
+        thread::sleep(Duration::from_millis(inter_request_time.round() as u64));
 
-            let my_barrier = Arc::clone(&barrier);
+        // run a new client in each thread
+        pool.execute(move || {
+            // This should return the clone of `logger` in the main function.
+            let logger = slog_scope::logger();
 
-            // run a new client in each thread
-            join_handles.push(std::thread::spawn(move || {
+            // Begin load experiment
+            let client_config = ClientConfig {
+                host: host.clone(),
+                port: port.clone(),
+                trusted_cert: trusted_cert.clone(),
+                use_ipv4: use_ipv4.clone(),
+            };
 
-                // This should return the clone of `logger` in the main function.
-                let logger = slog_scope::logger();
-                // wait on the barrier
-                my_barrier.wait();
+            // KE
+            let start = Instant::now();
 
-                let normal = Normal::new(inter_request_time, 3.0).unwrap();
+            let ke_res = run_nts_ke_client(&logger, client_config);
+            TRUE_KE.fetch_add(1, Ordering::SeqCst);
 
-                // seed each thread with a random wait time
-                let mut prev_exec_time = 0;
+            match ke_res {
+                Err(err) => {
+                    eprintln!("failure of tls stage: {}", err);
+                    process::exit(1)
+                }
+                Ok(_) => {}
+            }
 
-                // Begin load experiment (loop)
-                for _ in 0..iterations_per_client {
-                    let client_config = ClientConfig {
-                        host: host.clone(),
-                        port: port.clone(),
-                        trusted_cert: trusted_cert.clone(),
-                        use_ipv4: use_ipv4.clone(),
-                    };
+            let state = ke_res.unwrap();
 
-                    // sleep a random amount of time
-                    let mut sleep_time = normal.sample(&mut rand::thread_rng()).round() as i32;
+            let end = Instant::now();
+            let time_meas = end - start;
+            let time_meas_nanos = time_meas.as_nanos();
 
-                    sleep_time -= prev_exec_time;
-                    prev_exec_time = 0;
+            CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                    // println!("Sleep millis: {}", sleep_time.abs());
+            //debug!(logger, "running UDP client with state {:x?}", state);
 
-                    CLIENT_KE_S.get().clone().unwrap().send(format!("Sleeping for ms: {}", sleep_time.abs() as u64)).expect("unable to write to channel.");
+            // NTP
+            // allow for multiple time transfers per cookie
+            for _ in 0..exchanges_per_cookie {
+                let start = Instant::now();
 
-                    
+                let res = run_nts_ntp_client(&logger, state.clone());
+                TRUE_NTP.fetch_add(1, Ordering::SeqCst);
 
-                    thread::sleep(Duration::from_millis(sleep_time.abs() as u64));
+                let end = Instant::now();
+                let time_meas = end - start;
+                let time_meas_nanos = time_meas.as_nanos();
 
-                    // Crank the load until it breaks
-                    // Number of clients
+                CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                    // KE
-                    let start = Instant::now();
-
-                    let ke_res = run_nts_ke_client(&logger, client_config);
-                    TRUE_KE.fetch_add(1, Ordering::SeqCst);
-
-                    match ke_res {
-                        Err(err) => {
-                            eprintln!("failure of tls stage: {}", err);
-                            process::exit(1)
-                        }
-                        Ok(_) => {}
+                match res {
+                    Err(err) => {
+                        eprintln!("failure of client: {}", err);
+                        process::exit(1)
                     }
-
-                    let state = ke_res.unwrap();
-
-                    let end = Instant::now();
-                    let time_meas = end - start;
-                    let time_meas_nanos = time_meas.as_nanos();
-                    prev_exec_time += time_meas.as_millis() as i32;
-
-                    CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
-
-                    //debug!(logger, "running UDP client with state {:x?}", state);
-
-                    // NTP
-                    // allow for multiple time transfers per cookie
-                    for _ in 0..exchanges_per_cookie {
-                        let start = Instant::now();
-
-                        let res = run_nts_ntp_client(&logger, state.clone());
-                        TRUE_NTP.fetch_add(1, Ordering::SeqCst);
-
-                        let end = Instant::now();
-                        let time_meas = end - start;
-                        let time_meas_nanos = time_meas.as_nanos();
-                        prev_exec_time += time_meas.as_millis() as i32;
-
-                        CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
-
-                        match res {
-                            Err(err) => {
-                                eprintln!("failure of client: {}", err);
-                                process::exit(1)
-                            }
-                            Ok(_) => {
-                                // no output, assume proper
-                                // println!("stratum: {:}", _result.stratum);
-                                // println!("offset: {:.6}", _result.time_diff);
-                            }
-                        }
+                    Ok(_) => {
+                        // no output, assume proper
+                        // println!("stratum: {:}", _result.stratum);
+                        // println!("offset: {:.6}", _result.time_diff);
                     }
                 }
-            }));
+            }
+            
+        });
 
-        };
+    };
 
-        // wait for the clients
-        for handle in join_handles.into_iter() { 
-            handle.join().unwrap();
-        }
+    // wait for the clients
+    pool.join();
 
-        let true_end = Instant::now();
-        let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
+    let true_end = Instant::now();
+    let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
 
-        let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-        CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+    let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
+    CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
-        let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-        CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
-    }
+    let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
     // step
     let mut file = File::create("tests/reqs_per_second").unwrap();
     reqs_per_second += step_size;
     file.write_all(reqs_per_second.to_string().as_bytes()).expect("Unable to write next run");
-    
 }

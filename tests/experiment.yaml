@@ -1,9 +1,8 @@
 warmup_runs: 10
 
-num_runs: 1
-exchanges_per_cookie: 30
+total_requests: 10000
+exchanges_per_cookie: 10
 
 starting_num_clients: 10
-iterations_per_client: 40
 
 step_size: 5
