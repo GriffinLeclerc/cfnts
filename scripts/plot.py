@@ -2,6 +2,7 @@ import statistics as stats
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import yaml
 
 plotRequestNums = []
 clientKELineNums = []
@@ -48,8 +49,10 @@ def addRequestNums(filename):
 
     with open(filename, 'w') as file:
         # ignore some warmup server measurements to measure steady state
-        warmupRuns = 10;
+        config = open('tests/experiment.yaml', 'r')
+        yaml = yaml.safe_load(config)
 
+        warmupRuns = int(yaml['warmup_runs'])
         index = 0
 
         # for curLineNum, line in enumerate(lines):

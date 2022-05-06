@@ -174,78 +174,80 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     // using multiple clients
     for _ in 0..total_requests {
-        // need to clone these for thread lifetimes
-        let host = host.clone();
-        let port = port.clone();
-        let trusted_cert = trusted_cert.clone();
-
         thread::sleep(Duration::from_millis(inter_request_time.round() as u64));
 
-        // run a new client in each thread
-        pool.execute(move || {
-            // This should return the clone of `logger` in the main function.
-            let logger = slog_scope::logger();
+        for _ in 0..num_clients {
+            // need to clone these for thread lifetimes
+            let host = host.clone();
+            let port = port.clone();
+            let trusted_cert = trusted_cert.clone();
 
-            // Begin load experiment
-            let client_config = ClientConfig {
-                host: host.clone(),
-                port: port.clone(),
-                trusted_cert: trusted_cert.clone(),
-                use_ipv4: use_ipv4.clone(),
-            };
+            // run a new client in each thread
+            pool.execute(move || {
+                // This should return the clone of `logger` in the main function.
+                let logger = slog_scope::logger();
 
-            // KE
-            let start = Instant::now();
+                // Begin load experiment
+                let client_config = ClientConfig {
+                    host: host.clone(),
+                    port: port.clone(),
+                    trusted_cert: trusted_cert.clone(),
+                    use_ipv4: use_ipv4.clone(),
+                };
 
-            let ke_res = run_nts_ke_client(&logger, client_config);
-            TRUE_KE.fetch_add(1, Ordering::SeqCst);
-
-            match ke_res {
-                Err(err) => {
-                    eprintln!("failure of tls stage: {}", err);
-                    process::exit(1)
-                }
-                Ok(_) => {}
-            }
-
-            let state = ke_res.unwrap();
-
-            let end = Instant::now();
-            let time_meas = end - start;
-            let time_meas_nanos = time_meas.as_nanos();
-
-            CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
-
-            //debug!(logger, "running UDP client with state {:x?}", state);
-
-            // NTP
-            // allow for multiple time transfers per cookie
-            for _ in 0..exchanges_per_cookie {
+                // KE
                 let start = Instant::now();
 
-                let res = run_nts_ntp_client(&logger, state.clone());
-                TRUE_NTP.fetch_add(1, Ordering::SeqCst);
+                let ke_res = run_nts_ke_client(&logger, client_config);
+                TRUE_KE.fetch_add(1, Ordering::SeqCst);
+
+                match ke_res {
+                    Err(err) => {
+                        eprintln!("failure of tls stage: {}", err);
+                        process::exit(1)
+                    }
+                    Ok(_) => {}
+                }
+
+                let state = ke_res.unwrap();
 
                 let end = Instant::now();
                 let time_meas = end - start;
                 let time_meas_nanos = time_meas.as_nanos();
 
-                CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+                CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                match res {
-                    Err(err) => {
-                        eprintln!("failure of client: {}", err);
-                        process::exit(1)
-                    }
-                    Ok(_) => {
-                        // no output, assume proper
-                        // println!("stratum: {:}", _result.stratum);
-                        // println!("offset: {:.6}", _result.time_diff);
+                //debug!(logger, "running UDP client with state {:x?}", state);
+
+                // NTP
+                // allow for multiple time transfers per cookie
+                for _ in 0..exchanges_per_cookie {
+                    let start = Instant::now();
+
+                    let res = run_nts_ntp_client(&logger, state.clone());
+                    TRUE_NTP.fetch_add(1, Ordering::SeqCst);
+
+                    let end = Instant::now();
+                    let time_meas = end - start;
+                    let time_meas_nanos = time_meas.as_nanos();
+
+                    CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+
+                    match res {
+                        Err(err) => {
+                            eprintln!("failure of client: {}", err);
+                            process::exit(1)
+                        }
+                        Ok(_) => {
+                            // no output, assume proper
+                            // println!("stratum: {:}", _result.stratum);
+                            // println!("offset: {:.6}", _result.time_diff);
+                        }
                     }
                 }
-            }
             
-        });
+            });
+        }
 
     };
 
