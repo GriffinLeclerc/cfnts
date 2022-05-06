@@ -277,20 +277,64 @@ def plotCDF(filename, plotname, scale):
     adjustMeasurement(data, scale)
 
     n_bins = 50
-    x = data
+    
+    count, bins_count = np.histogram(data, n_bins)
+
+    # print(hist)
+    # print(bin_edges)
 
     plt.figure()
+    plt.xlim([0, max(data) + 1])
+    plt.gcf().set_size_inches(8, 4)
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    # fig, ax = plt.subplots(figsize=(8, 4))
 
-    # plot the cumulative histogram
-    n, bins, patches = ax.hist(x, n_bins, density=True, histtype='step',
-                            cumulative=True, align='left')
+    # # plot the cumulative histogram
+    # n, bins, patches = plt.hist(data, n_bins, density=True, histtype='step',
+    #                         cumulative=True, align='left')
 
-    ax.grid(True)
-    ax.set_title(plotname)
-    ax.set_xlabel("Total Operational Time (" + scale + ")")
-    ax.set_ylabel('Likelihood of occurrence')
+    # print(n)
+    # print(bins)
+    # print(patches)
+
+
+
+    
+    
+
+    # getting data of the histogram
+    count, bins_count = np.histogram(data, bins=60)
+    print(count)
+    print(bins_count)
+    
+    # finding the PDF of the histogram using count values
+    pdf = count / sum(count)
+    
+    # using numpy np.cumsum to calculate the CDF
+    # We can also find using the PDF values by looping and adding
+    cdf = np.cumsum(pdf)
+    print(cdf)
+    
+    # plotting PDF and CDF
+    # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
+    plt.plot(bins_count[1:], cdf, label="CDF")
+    plt.legend()
+
+    np.insert(cdf, 1, 0.0)
+    print(cdf)
+
+    plt.hlines(y=0, xmin = -10, xmax = bins_count[1], color = 'C0')
+    plt.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = 'C0')
+
+    
+
+
+    plt.grid(True)
+    plt.title(plotname)
+    plt.xlabel("Total Operational Time (" + scale + ")")
+    plt.ylabel('Likelihood of occurrence')
+
+    # plt.show()
     
     plt.savefig(figurePath + plotname + ".pdf")
 
@@ -317,16 +361,17 @@ serverNTS = resultPath + 'server_nts_auth'
 
 singleClient = True
 if singleClient:
-    plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     plotCDF(clientKE, "Client KE CDF", "ms")
+    # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
+    
 
-    plotPseudoCDF(1, clientNTP, "Client NTS Pseudo CDF", "ms")
-    plotCDF(clientNTP, "Client NTS CDF", "ms")
+    # plotPseudoCDF(1, clientNTP, "Client NTS Pseudo CDF", "ms")
+    # plotCDF(clientNTP, "Client NTS CDF", "ms")
 
 
-    plotCDF(serverNTP, "Server NTP CDF", "us")
-    plotCDF(serverNTS, "Server NTS CDF", "us")
-    plotCDF(serverKE, "Server KE CDF", "us")
+    # plotCDF(serverNTP, "Server NTP CDF", "us")
+    # plotCDF(serverNTS, "Server NTS CDF", "us")
+    # plotCDF(serverKE, "Server KE CDF", "us")
     exit(0)
 
 
