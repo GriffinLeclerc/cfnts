@@ -1,3 +1,4 @@
+import binascii
 import statistics as stats
 import matplotlib.pyplot as plt
 import os
@@ -50,9 +51,10 @@ def addRequestNums(filename):
     with open(filename, 'w') as file:
         # ignore some warmup server measurements to measure steady state
         config = open('tests/experiment.yaml', 'r')
-        yaml = yaml.safe_load(config)
+        doc = yaml.safe_load(config)
 
-        warmupRuns = int(yaml['warmup_runs'])
+        warmupRuns = int(doc['warmup_runs'])
+        print(warmupRuns)
         index = 0
 
         # for curLineNum, line in enumerate(lines):
@@ -214,7 +216,6 @@ def plot(filename, plotname, scale):
     plt.plot(list(range(0, len(actual))), actual, label="Actual")
     plt.plot(list(range(0, len(desired))), desired, label="Desired")
     plt.legend(loc="upper left")
-    print(actual)
     plt.savefig(filename.replace("results/", "figures/") + "Num Measurements" + ".pdf")
 
 
@@ -298,10 +299,6 @@ def plotCDF(filename, plotname, scale):
     # print(patches)
 
 
-
-    
-    
-
     # getting data of the histogram
     count, bins_count = np.histogram(data, bins=60)
     print(count)
@@ -317,14 +314,16 @@ def plotCDF(filename, plotname, scale):
     
     # plotting PDF and CDF
     # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
-    plt.plot(bins_count[1:], cdf, label="CDF")
-    plt.legend()
+    plt.plot(bins_count[1:], cdf)
 
     np.insert(cdf, 1, 0.0)
     print(cdf)
 
+    # lines at head and tail
     plt.hlines(y=0, xmin = -10, xmax = bins_count[1], color = 'C0')
     plt.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = 'C0')
+
+    plt.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 10, color = 'C0')
 
     
 
@@ -349,6 +348,9 @@ maxObsRequests = 1000000000
 resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
+
+print("reading results from " + resultPath)
+print("Writing figures to " + figurePath)
 
 if not os.path.exists(figurePath):
     os.makedirs(figurePath)
