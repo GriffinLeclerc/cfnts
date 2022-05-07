@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import yaml
+import matplotlib.gridspec as gridspec
 
 plotRequestNums = []
 clientKELineNums = []
@@ -267,13 +268,9 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
     plt.figure()
     
-    subplots = []
+    fig, subplots = plt.subplots(numFigs)
 
     if numFigs == 2:
-        fig, (ax1, ax2) = plt.subplots(numFigs)
-        subplots.append(ax1)
-        subplots.append(ax2)
-
         plt.gcf().set_size_inches(6, 6)
         plt.subplots_adjust(left=0.1,
                     bottom=0.1, 
@@ -282,11 +279,6 @@ def plotCDFs(filenames, plotnames, figurename, scale):
                     wspace=0, 
                     hspace=0.4) 
     elif numFigs == 3:
-        fig, (ax1, ax2, ax3) = plt.subplots(numFigs)
-        subplots.append(ax1)
-        subplots.append(ax2)
-        subplots.append(ax3)
-
         plt.gcf().set_size_inches(5, 9)
         plt.subplots_adjust(left=0.1,
                     bottom=0.1, 
@@ -297,8 +289,6 @@ def plotCDFs(filenames, plotnames, figurename, scale):
     else:
         print("Invalid number of subplots: " + str(numFigs))
         exit(0)
-
-
     
     for i, filename in enumerate(filenames):
         file1 = open(filename, 'r')
@@ -383,7 +373,7 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 minObsRequests = 1
 maxObsRequests = 7000
 
-resultPath = "results/"
+resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
