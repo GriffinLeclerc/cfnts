@@ -96,12 +96,11 @@ def inPlotWindow(numRequests):
     return numRequests > minObsRequests and numRequests <= maxObsRequests
 
 def addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, shouldMeasure):
-    relevantRequestNums(filename).append(lineNum)
-
     if inPlotWindow(numRequests):
         if not shouldMeasure:
             return
         plotRequestNums.append(numRequests)
+        relevantRequestNums(filename).append(lineNum)
 
 def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements):
     if inPlotWindow(numRequests):
@@ -382,9 +381,9 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
 # administrative observation window
 minObsRequests = 1
-maxObsRequests = 1000000000
+maxObsRequests = 7000
 
-resultPath = "results/single-client/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -424,6 +423,10 @@ plot(clientNTP, "Client NTS NTP Total Time", "ms")
 # print(percentagesGreaterThan5s)
 
 print("Client plots complete")
+
+print(len(plotRequestNums))
+print(len(clientKELineNums))
+print(len(clientNTPLineNums))
 
 addRequestNums(serverKE)
 addRequestNums(serverNTP)
