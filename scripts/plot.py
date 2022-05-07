@@ -373,7 +373,7 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 minObsRequests = 1
 maxObsRequests = 7000
 
-resultPath = "results/single-client/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -392,8 +392,8 @@ serverNTS = resultPath + 'server_nts_auth'
 if "single-client" in resultPath:
 
     plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTP CDF"], "Client CDFs", "ms")
-    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client NE CDF"], "Client CDFs 2", "ms")
-    plotCDFs([serverKE, serverNTS, serverNTP], ["Server KE CDF", "Server NTS CDF", "Server NTP CDF"], "Server CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client KE CDF"], "Client CDFs 2", "ms")
+    plotCDFs([serverKE, serverNTS, serverNTP], ["Server KE CDF", "Server NTS CDF", "Server NTP CDF"], "Server CDFs", "us")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
 
