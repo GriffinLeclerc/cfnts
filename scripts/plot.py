@@ -1,4 +1,5 @@
 import binascii
+from readline import parse_and_bind
 import statistics as stats
 import matplotlib.pyplot as plt
 import os
@@ -210,7 +211,8 @@ def plot(filename, plotname, scale):
     plt.ylabel("Total Operational Time (" + scale + ")")
     plt.legend(loc="upper left")
 
-    plt.savefig(figurePath + plotname + ".pdf")
+    plt.margins(0, 0)
+    plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
     plt.figure()
     plt.plot(list(range(0, len(actual))), actual, label="Actual")
@@ -257,85 +259,122 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
     # data = data[:900]
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
-    plt.savefig(figurePath + plotname + ".pdf")
+    plt.margins(0, 0)
+    plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
-def plotCDF(filename, plotname, scale):
-    file1 = open(filename, 'r')
-    lines = file1.readlines()
-
-    data = []
-
-    for lineNum, line in enumerate(lines):
-        if line.strip() == "":
-                continue
-
-        if "request(s)" in line:
-            continue
-        else:
-            data.append(int(line))
-
-    adjustMeasurement(data, scale)
-
-    n_bins = 50
-    
-    count, bins_count = np.histogram(data, n_bins)
-
-    # print(hist)
-    # print(bin_edges)
+def plotCDFs(filenames, plotnames, figurename, scale):
+    numFigs = len(filenames)
 
     plt.figure()
-    plt.xlim([0, max(data) + 1])
-    plt.gcf().set_size_inches(8, 4)
-
-    # fig, ax = plt.subplots(figsize=(8, 4))
-
-    # # plot the cumulative histogram
-    # n, bins, patches = plt.hist(data, n_bins, density=True, histtype='step',
-    #                         cumulative=True, align='left')
-
-    # print(n)
-    # print(bins)
-    # print(patches)
-
-
-    # getting data of the histogram
-    count, bins_count = np.histogram(data, bins=60)
-    print(count)
-    print(bins_count)
     
-    # finding the PDF of the histogram using count values
-    pdf = count / sum(count)
-    
-    # using numpy np.cumsum to calculate the CDF
-    # We can also find using the PDF values by looping and adding
-    cdf = np.cumsum(pdf)
-    print(cdf)
-    
-    # plotting PDF and CDF
-    # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
-    plt.plot(bins_count[1:], cdf)
+    subplots = []
 
-    np.insert(cdf, 1, 0.0)
-    print(cdf)
+    if numFigs == 2:
+        fig, (ax1, ax2) = plt.subplots(numFigs)
+        subplots.append(ax1)
+        subplots.append(ax2)
 
-    # lines at head and tail
-    plt.hlines(y=0, xmin = -10, xmax = bins_count[1], color = 'C0')
-    plt.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = 'C0')
+        plt.gcf().set_size_inches(6, 6)
+        plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0, 
+                    hspace=0.4) 
+    elif numFigs == 3:
+        fig, (ax1, ax2, ax3) = plt.subplots(numFigs)
+        subplots.append(ax1)
+        subplots.append(ax2)
+        subplots.append(ax3)
 
-    plt.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 10, color = 'C0')
+        plt.gcf().set_size_inches(5, 9)
+        plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0, 
+                    hspace=0.5) 
+    else:
+        print("Invalid number of subplots: " + str(numFigs))
+        exit(0)
+
 
     
+    for i, filename in enumerate(filenames):
+        file1 = open(filename, 'r')
+        lines = file1.readlines()
+
+        data = []
+
+        for lineNum, line in enumerate(lines):
+            if line.strip() == "":
+                    continue
+
+            if "request(s)" in line:
+                continue
+            else:
+                data.append(int(line))
+
+        adjustMeasurement(data, scale)
+
+        n_bins = 50
+        
+        count, bins_count = np.histogram(data, n_bins)
+
+        curSubplot = subplots[i]
+        curPlotName = plotnames[i]
+
+        curSubplot.set_xlim([0, max(data) + 1])
+
+        # print(hist)
+        # print(bin_edges)
+
+        # fig, ax = plt.subplots(figsize=(8, 4))
+
+        # # plot the cumulative histogram
+        # n, bins, patches = plt.hist(data, n_bins, density=True, histtype='step',
+        #                         cumulative=True, align='left')
+
+        # print(n)
+        # print(bins)
+        # print(patches)
 
 
-    plt.grid(True)
-    plt.title(plotname)
-    plt.xlabel("Total Operational Time (" + scale + ")")
-    plt.ylabel('Likelihood of occurrence')
+        # getting data of the histogram
+        count, bins_count = np.histogram(data, bins=60)
+        
+        # finding the PDF of the histogram using count values
+        pdf = count / sum(count)
+        
+        # using numpy np.cumsum to calculate the CDF
+        # We can also find using the PDF values by looping and adding
+        cdf = np.cumsum(pdf)
+
+        
+        # plotting PDF and CDF
+        # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
+        curSubplot.plot(bins_count[1:], cdf)
+
+        np.insert(cdf, 1, 0.0)
+
+
+        # lines at head and tail
+        curSubplot.hlines(y=0, xmin = -10, xmax = bins_count[1], color = 'C0')
+        curSubplot.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = 'C0')
+
+        curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 10, color = 'C0')
+
+        curSubplot.grid(True)
+        curSubplot.title.set_text(curPlotName)
+        curSubplot.set_xlabel("Total Operational Time (" + scale + ")")
+        curSubplot.set_ylabel('Likelihood of occurrence')
 
     # plt.show()
-    
-    plt.savefig(figurePath + plotname + ".pdf")
+       
+    plt.margins(0, 0)
+    plt.rcParams.update({'font.size': 12})
+    plt.savefig(figurePath + figurename + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
 
@@ -361,9 +400,11 @@ serverKE = resultPath + 'server_ke_create'
 serverNTP = resultPath + 'server_ntp_alone'
 serverNTS = resultPath + 'server_nts_auth'
 
-singleClient = True
-if singleClient:
-    plotCDF(clientKE, "Client KE CDF", "ms")
+if "single-client" in resultPath:
+
+    plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTP CDF"], "Client CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client NE CDF"], "Client CDFs 2", "ms")
+    plotCDFs([serverKE, serverNTS, serverNTP], ["Server KE CDF", "Server NTS CDF", "Server NTP CDF"], "Server CDFs", "ms")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
 
