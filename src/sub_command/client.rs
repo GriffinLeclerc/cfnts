@@ -152,7 +152,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
 
-    if inter_request_time < 10.0 {
+    if inter_request_time < 3.0 {
         // increase the number of clients for the next run
         let mut file = File::create("tests/num_clients").unwrap();
         num_clients += step_size;
