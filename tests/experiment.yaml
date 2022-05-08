@@ -7,5 +7,5 @@ starting_num_clients: 1
 
 step_size: 10
 
-is_axu_client: false
+is_aux_client: false
 aux_req_rate: 500
