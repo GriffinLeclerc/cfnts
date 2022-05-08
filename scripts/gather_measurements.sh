@@ -18,7 +18,7 @@ min_clients=$(yq '.starting_num_clients' tests/experiment.yaml)
 line=$(head -n 1 tests/reqs_per_second)
 declare -i line
 
-if [[ $line -ge 500 ]]
+if [[ $line -gt 500 ]]
 then
     # stop the arbiter
     ssh -t iol@132.177.116.25 sudo reboot

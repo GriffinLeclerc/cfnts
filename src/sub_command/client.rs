@@ -214,17 +214,19 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 match res {
                     Err(err) => {
                         eprintln!("failure of tls stage: {}", err);
-                        process::exit(1)
+                        return;
+                        // process::exit(1)
                     }
                     Ok(_) => {}
                 }
+
                 let state = res.unwrap();
                 //debug!(logger, "running UDP client with state {:x?}", state);
                 let res = run_nts_ntp_client(&logger, state);
                 match res {
                     Err(err) => {
                         eprintln!("failure of client: {}", err);
-                        process::exit(1)
+                        // process::exit(1)
                     }
                     Ok(_result) => {
                         // println!("stratum: {:}", _result.stratum);
