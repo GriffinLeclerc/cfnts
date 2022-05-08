@@ -96,42 +96,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     // Warm up the connection
     let warmup_runs = experiment_config.get_string("warmup_runs").unwrap().parse::<i32>().unwrap();
-
-    for _ in 0..warmup_runs {
-        let host = host.clone();
-        let port = port.clone();
-        let trusted_cert = trusted_cert.clone();
-
-        let client_config = ClientConfig {
-            host,
-            port,
-            trusted_cert,
-            use_ipv4,
-        };
-
-        let res = run_nts_ke_client(&logger, client_config);
-
-        match res {
-            Err(err) => {
-                eprintln!("failure of tls stage: {}", err);
-                process::exit(1)
-            }
-            Ok(_) => {}
-        }
-        let state = res.unwrap();
-        //debug!(logger, "running UDP client with state {:x?}", state);
-        let res = run_nts_ntp_client(&logger, state);
-        match res {
-            Err(err) => {
-                eprintln!("failure of client: {}", err);
-                process::exit(1)
-            }
-            Ok(_result) => {
-                // println!("stratum: {:}", _result.stratum);
-                // println!("offset: {:.6}", _result.time_diff);
-            }
-        }
-    }
     
     let total_requests = experiment_config.get_string("total_requests").unwrap().parse::<i32>().unwrap();
     let exchanges_per_cookie = experiment_config.get_string("exchanges_per_cookie").unwrap().parse::<i32>().unwrap();
@@ -236,6 +200,43 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
             });
         }
 
+    }
+
+    // Warmup if not an aux client
+    for _ in 0..warmup_runs {
+        let host = host.clone();
+        let port = port.clone();
+        let trusted_cert = trusted_cert.clone();
+
+        let client_config = ClientConfig {
+            host,
+            port,
+            trusted_cert,
+            use_ipv4,
+        };
+
+        let res = run_nts_ke_client(&logger, client_config);
+
+        match res {
+            Err(err) => {
+                eprintln!("failure of tls stage: {}", err);
+                process::exit(1)
+            }
+            Ok(_) => {}
+        }
+        let state = res.unwrap();
+        //debug!(logger, "running UDP client with state {:x?}", state);
+        let res = run_nts_ntp_client(&logger, state);
+        match res {
+            Err(err) => {
+                eprintln!("failure of client: {}", err);
+                process::exit(1)
+            }
+            Ok(_result) => {
+                // println!("stratum: {:}", _result.stratum);
+                // println!("offset: {:.6}", _result.time_diff);
+            }
+        }
     }
 
     // using multiple clients
