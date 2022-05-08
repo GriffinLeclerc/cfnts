@@ -150,9 +150,18 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     file.read_to_string(&mut tmp).expect("Unable to number of clients");
     let mut num_clients = tmp.parse::<i32>().unwrap();
 
+    let aux_yaml = experiment_config.get_string("is_aux_client").unwrap();
+    let is_aux_client = aux_yaml.contains("true"); 
+
+    // aux clients get one thread
+    if is_aux_client {
+        num_clients = 1;
+        reqs_per_second = experiment_config.get_string("aux_req_rate").unwrap().parse::<i32>().unwrap();
+    }
+
     let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
 
-    if inter_request_time < 2.0 {
+    if inter_request_time < 4.0 {
         // increase the number of clients for the next run
         let mut file = File::create("tests/num_clients").unwrap();
         num_clients += step_size;
@@ -171,6 +180,56 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     // Spawn a new thread from the pool for each inter request time
     let pool = ThreadPool::new(num_clients as usize);
+
+    // aux clients should just serve the desired num reqs forever
+    if is_aux_client {
+        println!("This is an aux client.");
+        loop {
+            let host = host.clone();
+            let port = port.clone();
+            let trusted_cert = trusted_cert.clone();
+            thread::sleep(Duration::from_millis(inter_request_time.round() as u64));
+
+            // run a new client in each thread
+            pool.execute(move || {
+                let host = host.clone();
+                let port = port.clone();
+                let trusted_cert = trusted_cert.clone();
+                let logger = slog_scope::logger();
+
+                let client_config = ClientConfig {
+                    host,
+                    port,
+                    trusted_cert,
+                    use_ipv4,
+                };
+
+                let res = run_nts_ke_client(&logger, client_config);
+
+                match res {
+                    Err(err) => {
+                        eprintln!("failure of tls stage: {}", err);
+                        process::exit(1)
+                    }
+                    Ok(_) => {}
+                }
+                let state = res.unwrap();
+                //debug!(logger, "running UDP client with state {:x?}", state);
+                let res = run_nts_ntp_client(&logger, state);
+                match res {
+                    Err(err) => {
+                        eprintln!("failure of client: {}", err);
+                        process::exit(1)
+                    }
+                    Ok(_result) => {
+                        // println!("stratum: {:}", _result.stratum);
+                        // println!("offset: {:.6}", _result.time_diff);
+                    }
+                }
+            });
+        }
+
+    }
 
     // using multiple clients
     for _ in 0..total_requests {

@@ -1,8 +1,11 @@
 warmup_runs: 10
 
-total_requests: 100
+total_requests: 1000
 exchanges_per_cookie: 3
 
 starting_num_clients: 1
 
 step_size: 10
+
+is_axu_client: false
+aux_req_rate: 500

@@ -214,11 +214,12 @@ def plot(filename, plotname, scale):
     plt.margins(0, 0)
     plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
+    # Reqs per second sanity check
     plt.figure()
     plt.plot(list(range(0, len(actual))), actual, label="Actual")
     plt.plot(list(range(0, len(desired))), desired, label="Desired")
     plt.legend(loc="upper left")
-    plt.savefig(filename.replace("results/", "figures/") + "Num Measurements" + ".pdf")
+    plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
 
 # Make Pseudo Distribution
@@ -280,6 +281,15 @@ def plotCDFs(filenames, plotnames, figurename, scale):
                     hspace=0.4) 
     elif numFigs == 3:
         plt.gcf().set_size_inches(5, 9)
+        plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0, 
+                    hspace=0.5) 
+    elif numFigs == 1:
+        subplots = [subplots]
+        plt.gcf().set_size_inches(6, 4)
         plt.subplots_adjust(left=0.1,
                     bottom=0.1, 
                     right=0.9, 
@@ -371,7 +381,8 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
 # administrative observation window
 minObsRequests = 1
-maxObsRequests = 7000
+maxObsRequests = 100000000
+# maxObsRequests = 7000
 
 resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
@@ -391,8 +402,9 @@ serverNTS = resultPath + 'server_nts_auth'
 
 if "single-client" in resultPath:
 
-    plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTP CDF"], "Client CDFs", "ms")
+    plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
     plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client KE CDF"], "Client CDFs 2", "ms")
+    plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
     plotCDFs([serverKE, serverNTS, serverNTP], ["Server KE CDF", "Server NTS CDF", "Server NTP CDF"], "Server CDFs", "us")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
