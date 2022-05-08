@@ -152,11 +152,14 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let aux_yaml = experiment_config.get_string("is_aux_client").unwrap();
     let is_aux_client = aux_yaml.contains("true"); 
+    let aux_req_rate = experiment_config.get_string("aux_req_rate").unwrap().parse::<i32>().unwrap();
+
+    let num_aux_clients = experiment_config.get_string("num_aux_clients").unwrap().parse::<i32>().unwrap();
 
     // aux clients get one thread
     if is_aux_client {
-        num_clients = 1;
-        reqs_per_second = experiment_config.get_string("aux_req_rate").unwrap().parse::<i32>().unwrap();
+        num_clients = 11;
+        reqs_per_second = aux_req_rate;
     }
 
     let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
@@ -172,9 +175,11 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     println!("reqs_per_second {}", reqs_per_second);
     println!("IRT {}", inter_request_time);
 
+    let additional_external_requests = aux_req_rate * num_aux_clients;
+
     // Begin experiment
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second * &exchanges_per_cookie)).expect("unable to write to channel.");
-    CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second)).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", (reqs_per_second * &exchanges_per_cookie) + &additional_external_requests)).expect("unable to write to channel.");
+    CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second + &additional_external_requests)).expect("unable to write to channel.");
 
     let true_start = Instant::now();
 
