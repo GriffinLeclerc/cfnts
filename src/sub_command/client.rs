@@ -122,18 +122,19 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     // aux clients get one thread
     if is_aux_client {
-        num_clients = 11;
+        num_clients = 1;
         reqs_per_second = aux_req_rate;
     }
 
     let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
 
-    if inter_request_time < 4.0 {
-        // increase the number of clients for the next run
-        let mut file = File::create("tests/num_clients").unwrap();
-        num_clients += step_size;
-        file.write_all(num_clients.to_string().as_bytes()).expect("Unable to increase the number of clients");
-    }
+    // keep it to one client for now
+    // if inter_request_time < 4.0 {
+    //     // increase the number of clients for the next run
+    //     let mut file = File::create("tests/num_clients").unwrap();
+    //     num_clients += step_size;
+    //     file.write_all(num_clients.to_string().as_bytes()).expect("Unable to increase the number of clients");
+    // }
 
     println!("num_clients {}", num_clients);
     println!("reqs_per_second {}", reqs_per_second);
