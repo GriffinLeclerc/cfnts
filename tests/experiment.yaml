@@ -9,4 +9,3 @@ step_size: 10
 
 is_aux_client: false
 aux_req_rate: 500
-num_aux_clients: 0

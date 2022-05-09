@@ -120,7 +120,10 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     let is_aux_client = aux_yaml.contains("true"); 
     let aux_req_rate = experiment_config.get_string("aux_req_rate").unwrap().parse::<i32>().unwrap();
 
-    let num_aux_clients = experiment_config.get_string("num_aux_clients").unwrap().parse::<i32>().unwrap();
+    let mut file = File::open("tests/num_aux_clients").unwrap();
+    let mut tmp = String::new();
+    file.read_to_string(&mut tmp).expect("Unable to aux client count");
+    let num_aux_clients = tmp.parse::<i32>().unwrap();
 
     // aux clients get one thread
     if is_aux_client {
@@ -335,12 +338,12 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
     // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
+    // write the number of failures
+    CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+
     // step
     let mut file = File::create("tests/reqs_per_second").unwrap();
     reqs_per_second += step_size;
     file.write_all(reqs_per_second.to_string().as_bytes()).expect("Unable to write next run");
-
-    // write the number of failures
-    CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
 }

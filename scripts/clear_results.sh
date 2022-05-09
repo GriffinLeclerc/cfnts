@@ -7,3 +7,6 @@ printf "" > results/server_nts_auth
 
 printf "" > tests/reqs_per_second
 printf "" > tests/num_clients
+printf "" > tests/num_aux_clients
+
+ssh -t iol@132.177.116.25 "printf 0 > cfnts/tests/num_aux_clients"

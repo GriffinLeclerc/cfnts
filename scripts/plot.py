@@ -11,8 +11,6 @@ plotRequestNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
-percentagesGreaterThan5s = []
-
 def mapInt(num):
     return int(num)
 
@@ -140,6 +138,8 @@ def plot(filename, plotname, scale):
     actual = []
     desired = []
 
+    errorCounts = []
+
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
         # print("line number = " + str(lineNum))
@@ -152,8 +152,12 @@ def plot(filename, plotname, scale):
         if "TRUE" in line:
             trueReqs = float(line.replace("TRUE REQS PER SECOND ", "").replace("\n", ""))
             # print("Desired: " + str(plotRequestNums[-1]) + " | Obtained: " + trueReqs)
-            desired.append(plotRequestNums[-1])
+            # desired.append(plotRequestNums[-1])
             actual.append(trueReqs)
+            continue
+
+        if "Errors" in line:
+            errorCounts.append(int(line.replace("Errors: ", "")))
             continue
 
         if "request(s)" in line:
@@ -172,13 +176,6 @@ def plot(filename, plotname, scale):
 
             numRequests = int(line.replace(" total request(s) per second\n", ""))
             addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, len(measurements) != 0)
-
-            count = 0
-            for m in measurements:
-                if m > 5000000000:
-                    count += 1
-            
-            percentagesGreaterThan5s.append(count / len(measurements))
 
             # clear the measurements
             measurements = []
@@ -219,8 +216,16 @@ def plot(filename, plotname, scale):
     plt.plot(list(range(0, len(actual))), actual, label="Actual")
     plt.plot(list(range(0, len(desired))), desired, label="Desired")
     plt.legend(loc="upper left")
-    plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
+    # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
+    plt.figure()
+    # plt.plot(plotRequestNums, errorCounts)
+    # plt.savefig(figurePath + "Error Rate" + ".pdf", bbox_inches='tight', pad_inches = 0)
+
+
+
+def plotServer(filename, plotname, scale):
+    return
 
 # Make Pseudo Distribution
 def plotPseudoCDF(obsNum, filename, plotname, scale):
@@ -422,23 +427,21 @@ if "single-client" in resultPath:
 plot(clientKE, "Client NTS KE Total Time", "ms")
 plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
-# print(percentagesGreaterThan5s)
-
 print("Client plots complete")
 
 print(len(plotRequestNums))
 print(len(clientKELineNums))
 print(len(clientNTPLineNums))
 
-addRequestNums(serverKE)
-addRequestNums(serverNTP)
-addRequestNums(serverNTS)
+# addRequestNums(serverKE)
+# addRequestNums(serverNTP)
+# addRequestNums(serverNTS)
 
 # print("Client numbers added to server files complete")
 
-plot(serverKE, "Server NTS Key Creation", "us")
-plot(serverNTP, "Server NTP Header Creation", "ns")
-plot(serverNTS, "Server NTS Packet Creation", "us")
+# plot(serverKE, "Server NTS Key Creation", "us")
+# plot(serverNTP, "Server NTP Header Creation", "ns")
+# plot(serverNTS, "Server NTS Packet Creation", "us")
 
 print("Server plots complete")
 
