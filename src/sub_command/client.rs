@@ -39,6 +39,8 @@ use threadpool::ThreadPool;
 pub static TRUE_KE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 pub static TRUE_NTP: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 
+pub static NUM_FAILURES: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+
 #[derive(Debug)]
 pub struct ClientConfig {
     pub host: String,
@@ -146,7 +148,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", (reqs_per_second * &exchanges_per_cookie) + (&additional_external_requests * &exchanges_per_cookie))).expect("unable to write to channel.");
     CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second + &additional_external_requests)).expect("unable to write to channel.");
 
-    let true_start = Instant::now();
+    // let true_start = Instant::now();
 
     // Spawn a new thread from the pool for each inter request time
     let pool = ThreadPool::new(num_clients as usize);
@@ -221,7 +223,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         match res {
             Err(err) => {
                 eprintln!("failure of tls stage: {}", err);
-                process::exit(1)
+                NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                return;
             }
             Ok(_) => {}
         }
@@ -231,7 +234,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         match res {
             Err(err) => {
                 eprintln!("failure of client: {}", err);
-                process::exit(1)
+                NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
             }
             Ok(_result) => {
                 // println!("stratum: {:}", _result.stratum);
@@ -267,12 +270,13 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 let start = Instant::now();
 
                 let ke_res = run_nts_ke_client(&logger, client_config);
-                TRUE_KE.fetch_add(1, Ordering::SeqCst);
+                // TRUE_KE.fetch_add(1, Ordering::SeqCst);
 
                 match ke_res {
                     Err(err) => {
                         eprintln!("failure of tls stage: {}", err);
-                        process::exit(1)
+                        NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                        return;
                     }
                     Ok(_) => {}
                 }
@@ -293,7 +297,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     let start = Instant::now();
 
                     let res = run_nts_ntp_client(&logger, state.clone());
-                    TRUE_NTP.fetch_add(1, Ordering::SeqCst);
+                    // TRUE_NTP.fetch_add(1, Ordering::SeqCst);
 
                     let end = Instant::now();
                     let time_meas = end - start;
@@ -304,7 +308,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     match res {
                         Err(err) => {
                             eprintln!("failure of client: {}", err);
-                            process::exit(1)
+                            NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
                         }
                         Ok(_) => {
                             // no output, assume proper
@@ -322,17 +326,21 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // wait for the clients
     pool.join();
 
-    let true_end = Instant::now();
-    let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
+    // let true_end = Instant::now();
+    // let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
 
-    let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-    CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+    // let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
+    // CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
-    let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
+    // let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
+    // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
     // step
     let mut file = File::create("tests/reqs_per_second").unwrap();
     reqs_per_second += step_size;
     file.write_all(reqs_per_second.to_string().as_bytes()).expect("Unable to write next run");
+
+    // write the number of failures
+    CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
 }
