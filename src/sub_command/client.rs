@@ -141,11 +141,14 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     //     file.write_all(num_clients.to_string().as_bytes()).expect("Unable to increase the number of clients");
     // }
 
+    let additional_external_requests = aux_req_rate * num_aux_clients;
+
     println!("num_clients {}", num_clients);
-    println!("reqs_per_second {}", reqs_per_second);
+    println!("local reqs_per_second {}", reqs_per_second);
     println!("IRT {}", inter_request_time);
 
-    let additional_external_requests = aux_req_rate * num_aux_clients;
+    println!("num_aux_clients {}", num_aux_clients);
+    println!("Total requests per second {}", additional_external_requests + reqs_per_second);   
 
     // Begin experiment
     CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", (reqs_per_second * &exchanges_per_cookie) + (&additional_external_requests * &exchanges_per_cookie))).expect("unable to write to channel.");

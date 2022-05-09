@@ -14,7 +14,7 @@ min_clients=$(yq '.starting_num_clients' tests/experiment.yaml)
 # start with the minimum number of clients
 [ -s "tests/num_clients" ] || printf $min_clients > tests/num_clients
 
-# start with the minimum number of clients
+# start with the minimum number of aux clients
 [ -s "tests/num_aux_clients" ] || printf "0" > tests/num_aux_clients
 
 # stop the experiment at 500 reqs per second

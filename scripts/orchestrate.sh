@@ -28,16 +28,28 @@ do
     # allow ntp to start
     sleep 0.5
 
+    # start with the minimum number of aux clients
+    [ -s "tests/num_aux_clients" ] || printf "0" > tests/num_aux_clients
+
     aux_clients=("23" "98" "27" "77" "72")
 
     aux_count=$(head -n 1 tests/num_aux_clients)
     declare -i aux_count
 
     # start the aux clients
-    for i in $(seq 1 aux_count)
+    for i in $(seq 1 $aux_count)
+    do
         quart=${aux_clients[$((i-1))]}
+        ip=132.177.116.$quart
+        
+        while ! ssh iol@$ip 'echo "ping"'
+        do
+            sleep 1
+            echo "Waiting for aux client..."
+        done
+
         (
-            ssh -t iol@132.177.116.$quart 'bash' < ./scripts/gather_measurements.sh
+            ssh -t iol@$ip 'bash' < ./scripts/gather_measurements.sh
         ) &
     done
 
@@ -58,7 +70,8 @@ do
 
     ssh -t iol@$s sudo reboot
 
-    for i in $(seq 1 aux_count)
+    for i in $(seq 1 $aux_count)
+    do
         quart=${aux_clients[$((i-1))]}
         (
             ssh -t iol@132.177.116.$quart sudo reboot
