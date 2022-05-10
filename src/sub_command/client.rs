@@ -343,8 +343,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
     // // write the number of failures
-    // CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
-    // CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
 
     // step
     let mut file = File::create("tests/reqs_per_second").unwrap();

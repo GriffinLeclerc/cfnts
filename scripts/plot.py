@@ -226,7 +226,7 @@ def plot(filename, plotname, scale):
 
     # plt.figure()
     # print(plotRequestNums)
-    print(errorCounts)
+    print("Errors: " + str(errorCounts))
     # plt.plot(plotRequestNums, errorCounts)
     # plt.savefig(figurePath + "Error Rate" + ".pdf", bbox_inches='tight', pad_inches = 0)
 
@@ -387,7 +387,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/single-client/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
