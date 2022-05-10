@@ -140,6 +140,8 @@ def plot(filename, plotname, scale):
 
     errorCounts = []
 
+    tmpPrevNum = 0
+
     for lineNum, line in enumerate(data):
         # print("line = " + line, end='')
         # print("line number = " + str(lineNum))
@@ -157,6 +159,8 @@ def plot(filename, plotname, scale):
             continue
 
         if "Errors" in line:
+            if tmpPrevNum + 10 != numRequests:
+                print(numRequests)
             errorCounts.append(int(line.replace("Errors: ", "")))
             continue
 
@@ -173,6 +177,8 @@ def plot(filename, plotname, scale):
 
             # print("Add data for previous number of requests: " + str(len(measurements)))
             addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
+
+            tmpPrevNum = numRequests
 
             numRequests = int(line.replace(" total request(s) per second\n", ""))
             addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, len(measurements) != 0)
@@ -218,7 +224,9 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
-    plt.figure()
+    # plt.figure()
+    # print(plotRequestNums)
+    print(errorCounts)
     # plt.plot(plotRequestNums, errorCounts)
     # plt.savefig(figurePath + "Error Rate" + ".pdf", bbox_inches='tight', pad_inches = 0)
 

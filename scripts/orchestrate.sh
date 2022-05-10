@@ -31,7 +31,7 @@ do
     # start with the minimum number of aux clients
     [ -s "tests/num_aux_clients" ] || printf "0" > tests/num_aux_clients
 
-    aux_clients=("23" "98" "27" "77" "72")
+    aux_clients=("23" "98" "27" "77" "72" "93" "97" "74" "96" "21" "83")
 
     aux_count=$(head -n 1 tests/num_aux_clients)
     declare -i aux_count

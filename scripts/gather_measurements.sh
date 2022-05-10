@@ -26,7 +26,7 @@ then
     aux_count=$(head -n 1 tests/num_aux_clients)
     declare -i aux_count
 
-    if [[ $aux_count == 5 ]]
+    if [[ $aux_count == 11 ]]
     then
         # stop the arbiter
         ssh -t iol@132.177.116.25 sudo reboot
