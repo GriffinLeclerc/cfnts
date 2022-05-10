@@ -131,7 +131,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         reqs_per_second = aux_req_rate;
     }
 
-    let inter_request_time: f64 = f64::from(num_clients as f64 * (1.0/reqs_per_second as f64) * 1000.0); // ms
+    let inter_request_time: f64 = f64::from((1.0/reqs_per_second as f64) * 1000.0); // ms
 
     // keep it to one client for now
     // if inter_request_time < 4.0 {
@@ -143,7 +143,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let additional_external_requests = aux_req_rate * num_aux_clients;
 
-    println!("num_clients {}", num_clients);
+    println!("num_client threads {}", num_clients);
     println!("local reqs_per_second {}", reqs_per_second);
     println!("IRT {}", inter_request_time);
 
