@@ -153,7 +153,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", (reqs_per_second * &exchanges_per_cookie) + (&additional_external_requests * &exchanges_per_cookie))).expect("unable to write to channel.");
     CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second + &additional_external_requests)).expect("unable to write to channel.");
 
-    let true_start = Instant::now();
+    // let true_start = Instant::now();
 
     // Spawn a new thread from the pool for each inter request time
     let pool = ThreadPool::new(num_clients as usize);
@@ -251,98 +251,97 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // using multiple clients
     for _ in 0..total_requests {
         thread::sleep(Duration::from_millis(inter_request_time.round() as u64));
+        // println!("Num KE reqs so far {}", TRUE_KE.load(Ordering::SeqCst));
 
-        for _ in 0..num_clients {
-            // need to clone these for thread lifetimes
-            let host = host.clone();
-            let port = port.clone();
-            let trusted_cert = trusted_cert.clone();
+        // need to clone these for thread lifetimes
+        let host = host.clone();
+        let port = port.clone();
+        let trusted_cert = trusted_cert.clone();
 
-            // run a new client in each thread
-            pool.execute(move || {
-                // This should return the clone of `logger` in the main function.
-                let logger = slog_scope::logger();
+        // run a new client in each thread
+        pool.execute(move || {
+            // This should return the clone of `logger` in the main function.
+            let logger = slog_scope::logger();
 
-                // Begin load experiment
-                let client_config = ClientConfig {
-                    host: host.clone(),
-                    port: port.clone(),
-                    trusted_cert: trusted_cert.clone(),
-                    use_ipv4: use_ipv4.clone(),
-                };
+            // Begin load experiment
+            let client_config = ClientConfig {
+                host: host.clone(),
+                port: port.clone(),
+                trusted_cert: trusted_cert.clone(),
+                use_ipv4: use_ipv4.clone(),
+            };
 
-                // KE
+            // KE
+            let start = Instant::now();
+
+            let ke_res = run_nts_ke_client(&logger, client_config);
+            // TRUE_KE.fetch_add(1, Ordering::SeqCst);
+
+            match ke_res {
+                Err(err) => {
+                    eprintln!("failure of tls stage: {}", err);
+                    NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                    return;
+                }
+                Ok(_) => {}
+            }
+
+            let state = ke_res.unwrap();
+
+            let end = Instant::now();
+            let time_meas = end - start;
+            let time_meas_nanos = time_meas.as_nanos();
+
+            CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+
+            //debug!(logger, "running UDP client with state {:x?}", state);
+
+            // NTP
+            // allow for multiple time transfers per cookie
+            for _ in 0..exchanges_per_cookie {
                 let start = Instant::now();
 
-                let ke_res = run_nts_ke_client(&logger, client_config);
-                // TRUE_KE.fetch_add(1, Ordering::SeqCst);
-
-                match ke_res {
-                    Err(err) => {
-                        eprintln!("failure of tls stage: {}", err);
-                        NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
-                        return;
-                    }
-                    Ok(_) => {}
-                }
-
-                let state = ke_res.unwrap();
+                let res = run_nts_ntp_client(&logger, state.clone());
+                // TRUE_NTP.fetch_add(1, Ordering::SeqCst);
 
                 let end = Instant::now();
                 let time_meas = end - start;
                 let time_meas_nanos = time_meas.as_nanos();
 
-                CLIENT_KE_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
+                CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
 
-                //debug!(logger, "running UDP client with state {:x?}", state);
-
-                // NTP
-                // allow for multiple time transfers per cookie
-                for _ in 0..exchanges_per_cookie {
-                    let start = Instant::now();
-
-                    let res = run_nts_ntp_client(&logger, state.clone());
-                    // TRUE_NTP.fetch_add(1, Ordering::SeqCst);
-
-                    let end = Instant::now();
-                    let time_meas = end - start;
-                    let time_meas_nanos = time_meas.as_nanos();
-
-                    CLIENT_NTP_S.get().clone().unwrap().send(time_meas_nanos.to_string()).expect("unable to write to channel.");
-
-                    match res {
-                        Err(err) => {
-                            eprintln!("failure of client: {}", err);
-                            NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
-                        }
-                        Ok(_) => {
-                            // no output, assume proper
-                            // println!("stratum: {:}", _result.stratum);
-                            // println!("offset: {:.6}", _result.time_diff);
-                        }
+                match res {
+                    Err(err) => {
+                        eprintln!("failure of client: {}", err);
+                        NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                    }
+                    Ok(_) => {
+                        // no output, assume proper
+                        // println!("stratum: {:}", _result.stratum);
+                        // println!("offset: {:.6}", _result.time_diff);
                     }
                 }
+            }
             
-            });
-        }
+        });
 
     };
 
     // wait for the clients
     pool.join();
 
-    let true_end = Instant::now();
-    let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
+    // let true_end = Instant::now();
+    // let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
 
-    let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-    CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+    // let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
+    // CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
-    let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
+    // let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
+    // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
-    // write the number of failures
-    CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
-    CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    // // write the number of failures
+    // CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+    // CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
 
     // step
     let mut file = File::create("tests/reqs_per_second").unwrap();
