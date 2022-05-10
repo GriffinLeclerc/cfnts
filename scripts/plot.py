@@ -281,37 +281,9 @@ def plotCDFs(filenames, plotnames, figurename, scale):
     numFigs = len(filenames)
 
     plt.figure()
-    
-    fig, subplots = plt.subplots(numFigs)
 
-    if numFigs == 2:
-        plt.gcf().set_size_inches(6, 6)
-        plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0, 
-                    hspace=0.4) 
-    elif numFigs == 3:
-        plt.gcf().set_size_inches(5, 9)
-        plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0, 
-                    hspace=0.5) 
-    elif numFigs == 1:
-        subplots = [subplots]
-        plt.gcf().set_size_inches(6, 4)
-        plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0, 
-                    hspace=0.5) 
-    else:
-        print("Invalid number of subplots: " + str(numFigs))
-        exit(0)
+    maxX = 0
+    colors = ['steelblue', 'orange', 'turquoise']
     
     for i, filename in enumerate(filenames):
         file1 = open(filename, 'r')
@@ -334,10 +306,14 @@ def plotCDFs(filenames, plotnames, figurename, scale):
         
         count, bins_count = np.histogram(data, n_bins)
 
-        curSubplot = subplots[i]
+        curSubplot = plt
         curPlotName = plotnames[i]
 
-        curSubplot.set_xlim([0, max(data) + 1])
+        xLim = max(data) + 1
+        if (xLim > maxX):
+            curSubplot.xlim([0, xLim])
+            maxX = xLim
+
 
         # print(hist)
         # print(bin_edges)
@@ -366,27 +342,41 @@ def plotCDFs(filenames, plotnames, figurename, scale):
         
         # plotting PDF and CDF
         # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
-        curSubplot.plot(bins_count[1:], cdf)
+        curSubplot.plot(bins_count[1:], cdf, label=curPlotName, color=colors[i])
 
         np.insert(cdf, 1, 0.0)
 
 
         # lines at head and tail
-        curSubplot.hlines(y=0, xmin = -10, xmax = bins_count[1], color = 'C0')
-        curSubplot.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = 'C0')
+        curSubplot.hlines(y=0, xmin = -1000, xmax = bins_count[1], color = colors[i])
+        curSubplot.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = colors[i])
 
-        curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 10, color = 'C0')
+        curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 1000, color = colors[i])
+
+        plt.text(bins_count[1], min(cdf), "{:.2f}".format(min(data)) + " " + scale)
+        if i == 2:
+            print("yes")
+            plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale, va='top')
+        else:
+            plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale)
+
+        # Add circles to points of interest
+        plt.plot([bins_count[1]], [min(cdf)], 'o', color=colors[i])
+        plt.plot([max(data)], [1], 'o', color=colors[i])
 
         curSubplot.grid(True)
-        curSubplot.title.set_text(curPlotName)
-        curSubplot.set_xlabel("Total Operational Time (" + scale + ")")
-        curSubplot.set_ylabel('Likelihood of occurrence')
+        # curSubplot.title.set_text(curPlotName)
+        curSubplot.xlabel("Total Operational Time (" + scale + ")")
+        curSubplot.ylabel('Likelihood of occurrence')
 
-    # plt.show()
+    
        
-    plt.margins(0, 0)
+    # plt.margins(0, 0)
+    plt.legend(loc="right")
     plt.rcParams.update({'font.size': 12})
     plt.savefig(figurePath + figurename + ".pdf", bbox_inches='tight', pad_inches = 0)
+
+    plt.show()
 
 
 
@@ -397,7 +387,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/"
+resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -415,10 +405,11 @@ serverNTS = resultPath + 'server_nts_auth'
 
 if "single-client" in resultPath:
 
-    plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
-    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client KE CDF"], "Client CDFs 2", "ms")
-    plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
-    plotCDFs([serverKE, serverNTS, serverNTP], ["Server KE CDF", "Server NTS CDF", "Server NTP CDF"], "Server CDFs", "us")
+    # plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client KE CDF"], "Client CDFs", "ms")
+    # plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
+    # plotCDFs([serverNTP, serverNTS, serverKE], ["Server NTP CDF", "Server NTS CDF", "Server KE CDF"], "Server CDFs", "us")
+    plotCDFs([serverNTP, serverKE, serverNTS], ["Server NTP CDF", "Server KE CDF", "Server NTS CDF"], "Server CDFs", "us")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
 
