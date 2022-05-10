@@ -127,7 +127,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     // aux clients get one thread
     if is_aux_client {
-        num_clients = 1;
         reqs_per_second = aux_req_rate;
     }
 
@@ -154,7 +153,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     CLIENT_NTP_S.get().clone().unwrap().send(format!("{} total request(s) per second", (reqs_per_second * &exchanges_per_cookie) + (&additional_external_requests * &exchanges_per_cookie))).expect("unable to write to channel.");
     CLIENT_KE_S.get().clone().unwrap().send(format!("{} total request(s) per second", reqs_per_second + &additional_external_requests)).expect("unable to write to channel.");
 
-    // let true_start = Instant::now();
+    let true_start = Instant::now();
 
     // Spawn a new thread from the pool for each inter request time
     let pool = ThreadPool::new(num_clients as usize);
@@ -332,14 +331,14 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // wait for the clients
     pool.join();
 
-    // let true_end = Instant::now();
-    // let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
+    let true_end = Instant::now();
+    let true_diff = ((true_end - true_start).as_millis() as f64) / 1000.0;
 
-    // let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
-    // CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
+    let true_ke_per_second = (TRUE_KE.load(Ordering::SeqCst) as f64) / true_diff;
+    CLIENT_KE_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ke_per_second)).expect("unable to write to channel.");
 
-    // let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
-    // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
+    let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
+    CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
     // write the number of failures
     CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
