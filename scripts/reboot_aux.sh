@@ -5,7 +5,6 @@ aux_count=11
 # start the aux clients
 for i in $(seq 1 $aux_count)
 do
-    echo i
     quart=${aux_clients[$((i-1))]}
     ip=132.177.116.$quart
     ssh -t iol@$ip sudo reboot

@@ -1,11 +1,11 @@
 warmup_runs: 10
 
-total_requests: 2000
+total_runtime_ms: 20000
 exchanges_per_cookie: 3
 
 starting_num_clients: 1000
 
 step_size: 10
 
-is_aux_client: false
+is_aux_client: true
 aux_req_rate: 500

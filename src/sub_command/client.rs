@@ -99,7 +99,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     // Warm up the connection
     let warmup_runs = experiment_config.get_string("warmup_runs").unwrap().parse::<i32>().unwrap();
     
-    let total_requests = experiment_config.get_string("total_requests").unwrap().parse::<i32>().unwrap();
+    let total_runtime_ms = experiment_config.get_string("total_runtime_ms").unwrap().parse::<i32>().unwrap();
     let exchanges_per_cookie = experiment_config.get_string("exchanges_per_cookie").unwrap().parse::<i32>().unwrap();
  
     let step_size = experiment_config.get_string("step_size").unwrap().parse::<i32>().unwrap();
@@ -132,6 +132,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
     let inter_request_time: f64 = f64::from((1.0/reqs_per_second as f64) * 1000.0); // ms
 
+    let total_requests = (total_runtime_ms as f64 / inter_request_time).round() as i32;
+
     // keep it to one client for now
     // if inter_request_time < 4.0 {
     //     // increase the number of clients for the next run
@@ -145,6 +147,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
     println!("num_client threads {}", num_clients);
     println!("local reqs_per_second {}", reqs_per_second);
     println!("IRT {}", inter_request_time);
+    println!("total_requests {}", total_requests);
 
     println!("num_aux_clients {}", num_aux_clients);
     println!("Total requests per second {}", additional_external_requests + reqs_per_second);   
