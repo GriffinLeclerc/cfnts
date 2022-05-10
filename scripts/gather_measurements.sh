@@ -30,6 +30,9 @@ then
     then
         # stop the arbiter
         ssh -t iol@132.177.116.25 sudo reboot
+
+        # stop the server
+        ssh -t iol@nts-server.iol.unh.edu sudo reboot
     fi
 
     printf $(($aux_count+1)) > tests/num_aux_clients

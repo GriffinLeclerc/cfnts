@@ -1,9 +1,9 @@
 warmup_runs: 10
 
-total_requests: 1000
+total_requests: 10000
 exchanges_per_cookie: 3
 
-starting_num_clients: 2
+starting_num_clients: 1000
 
 step_size: 10
 

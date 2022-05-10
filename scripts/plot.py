@@ -397,7 +397,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/"
+resultPath = "results/11 aux clients/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
