@@ -14,7 +14,6 @@ do
         # start the KE server
         ssh -t iol@$s 'bash' < ./scripts/run_ke_server.sh
     ) &
-    disown %1
 
     # allow keys to populate
     sleep 2
@@ -23,7 +22,6 @@ do
         # start the NTP server
         ssh -t iol@$s sudo 'bash' < ./scripts/run_ntp_server.sh
     ) &
-    disown %1
 
     # allow ntp to start
     sleep 1
