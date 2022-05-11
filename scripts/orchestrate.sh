@@ -17,7 +17,7 @@ do
     disown %1
 
     # allow keys to populate
-    sleep 0.5
+    sleep 2
 
     (
         # start the NTP server
@@ -26,7 +26,7 @@ do
     disown %1
 
     # allow ntp to start
-    sleep 0.5
+    sleep 1
 
     # start with the minimum number of aux clients
     [ -s "tests/num_aux_clients" ] || printf "0" > tests/num_aux_clients
