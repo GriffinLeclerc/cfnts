@@ -188,7 +188,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                 match res {
                     Err(err) => {
-                        eprintln!("failure of tls stage: {}", err);
+                        // eprintln!("failure of tls stage: {}", err);
                         return;
                         // process::exit(1)
                     }
@@ -200,7 +200,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 let res = run_nts_ntp_client(&logger, state);
                 match res {
                     Err(err) => {
-                        eprintln!("failure of client: {}", err);
+                        // eprintln!("failure of client: {}", err);
                         // process::exit(1)
                     }
                     Ok(_result) => {
@@ -230,7 +230,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
         match res {
             Err(err) => {
-                eprintln!("failure of tls stage: {}", err);
+                // eprintln!("failure of tls stage: {}", err);
                 NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
                 return;
             }
@@ -241,7 +241,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         let res = run_nts_ntp_client(&logger, state);
         match res {
             Err(err) => {
-                eprintln!("failure of client: {}", err);
+                // eprintln!("failure of client: {}", err);
                 NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
             }
             Ok(_result) => {
@@ -282,7 +282,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
             match ke_res {
                 Err(err) => {
-                    eprintln!("failure of tls stage: {}", err);
+                    // eprintln!("failure of tls stage: {}", err);
                     NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
                     return;
                 }
@@ -315,7 +315,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
 
                 match res {
                     Err(err) => {
-                        eprintln!("failure of client: {}", err);
+                        // eprintln!("failure of client: {}", err);
                         NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
                     }
                     Ok(_) => {

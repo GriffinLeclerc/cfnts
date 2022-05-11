@@ -159,8 +159,8 @@ def plot(filename, plotname, scale):
             continue
 
         if "Errors" in line:
-            if tmpPrevNum + 10 != numRequests:
-                print(numRequests)
+            # if tmpPrevNum + 10 != numRequests:
+            #     print(numRequests)
             errorCounts.append(int(line.replace("Errors: ", "")))
             continue
 
