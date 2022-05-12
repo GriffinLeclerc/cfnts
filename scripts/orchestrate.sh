@@ -1,4 +1,4 @@
-s=nts-server.iol.unh.edu
+s=doctor.iol.unh.edu
 c=132.177.116.19
 server_uname="griffin"
 

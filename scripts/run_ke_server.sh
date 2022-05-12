@@ -2,6 +2,7 @@
 
 
 # cd /home/iol/cfnts
+cd /home/griffin/dev/cfnts
 
 memcached -u root &
 
