@@ -10,6 +10,7 @@ use rustls::Session;
 
 use slog::{debug, error, info};
 
+use std::borrow::Borrow;
 use std::sync::{Arc, RwLock};
 use std::io::{Read, Write};
 
@@ -51,6 +52,8 @@ use crate::nts_ke::records::{
 use super::listener::KeServerListener;
 use super::server::KeServerState;
 
+pub static mut CLIENT_ADDR: String = String::new();
+
 // response uses the configuration and the keys and computes the response
 // sent to the client.
 fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<u8> {
@@ -86,7 +89,18 @@ fn response(keys: NTSKeys, rotator: &Arc<RwLock<KeyRotator>>, port: u16) -> Vec<
     response.append(&mut serialize(end_record));
 
     let end = Instant::now();
-    SERVER_KE_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
+
+    // only write measurements related to the measurement client
+    let experiment_config = config::Config::builder()
+            .add_source(config::File::with_name("tests/experiment.yaml")).build().expect("Unable to build ntp server config.");
+    let meas_client_ip = experiment_config.get_string("meas_client_ip").unwrap();
+
+    unsafe {
+        if CLIENT_ADDR.contains(&meas_client_ip) {
+            // println!("Writing KE measurement");
+            SERVER_KE_S.get().clone().unwrap().send((end - start).as_nanos().to_string()).expect("unable to write to channel.");
+        }
+    }
 
     response
 }
@@ -139,6 +153,10 @@ impl KeServerConn {
         listener: &KeServerListener,
     ) -> KeServerConn {
         let server_state = listener.state();
+
+        unsafe {
+            CLIENT_ADDR = tcp_stream.local_addr().unwrap().to_string();
+        }
 
         // Create a TLS session from a server-wide configuration.
         let tls_session = rustls::ServerSession::new(&server_state.tls_server_config);

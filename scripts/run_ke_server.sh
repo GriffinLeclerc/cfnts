@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-cd /home/iol/cfnts
+# cd /home/iol/cfnts
 
 memcached -u root &
 

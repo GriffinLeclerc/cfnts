@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/iol/cfnts
+# cd /home/iol/cfnts
 
 echo $(whoami)
 echo $HOSTNAME

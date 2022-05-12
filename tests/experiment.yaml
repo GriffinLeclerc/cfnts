@@ -7,5 +7,7 @@ starting_num_clients: 1000
 
 step_size: 10
 
+meas_client_ip: 132.177.116.19
+
 is_aux_client: true
 aux_req_rate: 500

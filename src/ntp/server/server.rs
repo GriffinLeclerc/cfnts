@@ -40,6 +40,8 @@ const BUF_SIZE: usize = 1280; // Anything larger might fragment.
 const TWO_POW_32: f64 = 4294967296.0;
 const TWO_POW_16: f64 = 65536.0;
 
+pub static mut CLIENT_ADDR: String = String::new();
+
 lazy_static! {
     static ref QUERY_COUNTER: IntCounter =
         register_int_counter!("ntp_queries_total", "Number of NTP queries").unwrap();
@@ -137,6 +139,9 @@ fn run_server(
             continue;
         }
         let src = r.address.unwrap();
+        unsafe {
+            CLIENT_ADDR = src.to_string();
+        }
         // We should only have a single cmsg of known type.
         // The nix crate implements a typesafe interface to cmsg,
         // hence some of the matching here.
@@ -363,7 +368,18 @@ fn response(
     }
 
     let ntp_end = Instant::now(); 
-    SERVER_NTP_S.get().clone().unwrap().send((ntp_end - ntp_start).as_nanos().to_string()).expect("unable to write to channel.");
+
+    // only write measurements related to the measurement client
+    let experiment_config = config::Config::builder()
+            .add_source(config::File::with_name("tests/experiment.yaml")).build().expect("Unable to build ntp server config.");
+    let meas_client_ip = experiment_config.get_string("meas_client_ip").unwrap();
+
+    // only write measurements related to the measurement client
+    unsafe {
+    if CLIENT_ADDR.contains(&meas_client_ip) {
+        // println!("Writing NTP measurement");
+        SERVER_NTP_S.get().clone().unwrap().send((ntp_end - ntp_start).as_nanos().to_string()).expect("unable to write to channel.");
+    } }
 
     if is_nts_packet(&query_packet) {
 
@@ -390,7 +406,14 @@ fn response(
 
                                 let nts_end = Instant::now(); 
 
-                                SERVER_NTS_S.get().clone().unwrap().send((nts_end - nts_start).as_nanos().to_string()).expect("unable to write to channel.");
+                                // only write measurements related to the measurement client
+                                unsafe {
+                                if CLIENT_ADDR.contains(&meas_client_ip) {
+                                    // println!("Writing NTS measurement");
+                                    SERVER_NTS_S.get().clone().unwrap().send((nts_end - nts_start).as_nanos().to_string()).expect("unable to write to channel.");
+                                } }
+
+                                
 
                                 Ok(res)},
                             None => {

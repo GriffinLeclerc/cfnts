@@ -1,9 +1,10 @@
 s=nts-server.iol.unh.edu
 c=132.177.116.19
+server_uname="griffin"
 
 while true
 do
-    while ! ssh iol@$s 'echo "ping"'
+    while ! ssh $server_uname@$s 'echo "ping"'
     do
         sleep 1
         echo "Trying again..."
@@ -12,7 +13,7 @@ do
 
     (
         # start the KE server
-        ssh -t iol@$s 'bash' < ./scripts/run_ke_server.sh
+        ssh -t $server_uname@$s 'bash' < ./scripts/run_ke_server.sh
     ) &
 
     # allow keys to populate
@@ -20,7 +21,7 @@ do
 
     (
         # start the NTP server
-        ssh -t iol@$s sudo 'bash' < ./scripts/run_ntp_server.sh
+        ssh -t $server_uname@$s sudo 'bash' < ./scripts/run_ntp_server.sh
     ) &
 
     # allow ntp to start
