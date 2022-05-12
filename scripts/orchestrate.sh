@@ -67,7 +67,7 @@ do
 
     # pkill ./target/release/cfnts
 
-    ssh -t iol@$s sudo reboot
+    ssh -t $server_uname@$s sudo reboot
 
     for i in $(seq 1 $aux_count)
     do

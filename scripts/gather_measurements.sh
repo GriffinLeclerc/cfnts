@@ -46,4 +46,4 @@ fi
 
 
 # Run the experiment
-./target/release/cfnts client -c tests/intermediate.pem nts-server.iol.unh.edu
+./target/release/cfnts client -c tests/intermediate.pem doctor.iol.unh.edu
