@@ -215,7 +215,7 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
 
     plt.margins(0, 0)
-    # plt.yscale('log')
+    plt.yscale('log')
     plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
     # Reqs per second sanity check
@@ -354,9 +354,9 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
         curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 1000, color = colors[i])
 
-        if i == 2:
+        if i == 1:
             # TODO Consider adding a horizontal dashed line for space between text
-            plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=-50)
+            plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=0)
         else:
             plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=45)
             
@@ -389,7 +389,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/single-client/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 

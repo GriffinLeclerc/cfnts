@@ -155,7 +155,7 @@ impl KeServerConn {
         let server_state = listener.state();
 
         unsafe {
-            CLIENT_ADDR = tcp_stream.local_addr().unwrap().to_string();
+            CLIENT_ADDR = tcp_stream.peer_addr().unwrap().to_string();
         }
 
         // Create a TLS session from a server-wide configuration.
