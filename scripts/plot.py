@@ -201,14 +201,23 @@ def plot(filename, plotname, scale):
 
     adjustMeasurements([meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements], scale)
 
-    plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
-    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
+    
+
+    # plt.plot(plotRequestNums, ninetiethMeasurements, 'r',  label="95th Percentile")
+    # plt.plot(plotRequestNums, seventyfifthMeasurements, label="75th Percentile")
+    # plt.plot(plotRequestNums, medianMeasurements, 'g', label="Median")
+    # plt.plot(plotRequestNums, twentyfifthMeasurements, label="25th Percentile")
+    # plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
+    
 
     plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
     plt.plot(plotRequestNums, twentyfifthMeasurements, label="25th Percentile")
     plt.plot(plotRequestNums, medianMeasurements, 'g', label="Median")
     plt.plot(plotRequestNums, seventyfifthMeasurements, label="75th Percentile")
     plt.plot(plotRequestNums, ninetiethMeasurements, 'r',  label="95th Percentile")
+
+    plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
+    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
 
     plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
@@ -296,7 +305,7 @@ def plotCDFs(filenames, plotnames, figurename, scale):
             if line.strip() == "":
                     continue
 
-            if "request(s)" in line:
+            if "request(s)" in line or "Error" in line:
                 continue
             else:
                 data.append(int(line))
@@ -340,26 +349,33 @@ def plotCDFs(filenames, plotnames, figurename, scale):
         # We can also find using the PDF values by looping and adding
         cdf = np.cumsum(pdf)
 
+        # Scale width of lines so they are not wholey overwritten by other lines 
+        default_width = 1
+        scalar = 0.3
+
+        custom_width = default_width + (scalar * (numFigs - (i+1)))
+        # print("Figure " + str(i + 1))
+        # print(custom_width)
+        # print("-----------")
+
         
         # plotting PDF and CDF
         # plt.plot(bins_count[1:], pdf, color="red", label="PDF")
-        curSubplot.plot(bins_count[1:], cdf, label=curPlotName, color=colors[i])
+        curSubplot.plot(bins_count[1:], cdf, label=curPlotName, color=colors[i], linewidth=custom_width)
 
         np.insert(cdf, 1, 0.0)
 
-
         # lines at head and tail
-        curSubplot.hlines(y=0, xmin = -1000, xmax = bins_count[1], color = colors[i])
-        curSubplot.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = colors[i])
+        curSubplot.hlines(y=0, xmin = -1000, xmax = bins_count[1], color = colors[i], linewidth=custom_width)
+        curSubplot.vlines(x=bins_count[1], ymin = 0, ymax = min(cdf), color = colors[i], linewidth=custom_width)
 
-        curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 1000, color = colors[i])
+        curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 1000, color = colors[i], linewidth=custom_width)
 
-        if i == 1:
-            # TODO Consider adding a horizontal dashed line for space between text
-            plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=0)
-        else:
-            plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=45)
-            
+        # if i == 1:
+        #     # TODO Consider adding a horizontal dashed line for space between text
+        #     plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=0)
+        # else:
+        plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=45)
         plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale, rotation=45)
 
         # Add circles to points of interest
@@ -374,7 +390,7 @@ def plotCDFs(filenames, plotnames, figurename, scale):
     
        
     # plt.margins(0, 0)
-    plt.legend(loc="right")
+    plt.legend(loc="lower right")
     plt.rcParams.update({'font.size': 12})
     plt.savefig(figurePath + figurename + ".pdf", bbox_inches='tight', pad_inches = 0)
 
@@ -389,7 +405,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/single-client/"
+resultPath = "results/! Load Results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
