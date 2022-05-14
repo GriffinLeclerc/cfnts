@@ -1,8 +1,8 @@
 warmup_runs: 10
 
-num_runs: 10000
+num_runs: 1
 total_runtime_ms: 20000
-exchanges_per_cookie: 3
+exchanges_per_cookie: 30
 
 starting_num_clients: 1000
 
