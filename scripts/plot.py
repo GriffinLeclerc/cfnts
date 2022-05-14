@@ -215,7 +215,7 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
 
     plt.margins(0, 0)
-    plt.yscale('log')
+    # plt.yscale('log')
     plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
     # Reqs per second sanity check
@@ -389,7 +389,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/"
+resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -408,10 +408,10 @@ serverNTS = resultPath + 'server_nts_auth'
 if "single-client" in resultPath:
 
     # plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
-    plotCDFs([clientNTP, clientKE], ["Client NTP CDF", "Client KE CDF"], "Client CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["$d_{CNTP}$ CDF", "$d_{KE}$ CDF"], "Client CDFs", "ms")
     # plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
     # plotCDFs([serverNTP, serverNTS, serverKE], ["Server NTP CDF", "Server NTS CDF", "Server KE CDF"], "Server CDFs", "us")
-    plotCDFs([serverNTP, serverKE, serverNTS], ["Server NTP CDF", "Server KE CDF", "Server NTS CDF"], "Server CDFs", "us")
+    plotCDFs([serverNTP, serverKE, serverNTS], ["$d_{SNTP}$ CDF", "$d_{SKE}$ CDF", "$d_{SNTS}$ CDF"], "Server CDFs", "us")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
 
@@ -434,15 +434,15 @@ print(len(plotRequestNums))
 print(len(clientKELineNums))
 print(len(clientNTPLineNums))
 
-# addRequestNums(serverKE)
-# addRequestNums(serverNTP)
-# addRequestNums(serverNTS)
+addRequestNums(serverKE)
+addRequestNums(serverNTP)
+addRequestNums(serverNTS)
 
-# print("Client numbers added to server files complete")
+print("Client numbers added to server files complete")
 
-# plot(serverKE, "Server NTS Key Creation", "us")
-# plot(serverNTP, "Server NTP Header Creation", "ns")
-# plot(serverNTS, "Server NTS Packet Creation", "us")
+plot(serverKE, "Server NTS Key Creation", "us")
+plot(serverNTP, "Server NTP Header Creation", "ns")
+plot(serverNTS, "Server NTS Packet Creation", "us")
 
 print("Server plots complete")
 

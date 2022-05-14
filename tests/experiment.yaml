@@ -1,5 +1,6 @@
 warmup_runs: 10
 
+num_runs: 10000
 total_runtime_ms: 20000
 exchanges_per_cookie: 3
 
