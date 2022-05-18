@@ -7,7 +7,8 @@ import numpy as np
 import yaml
 import matplotlib.gridspec as gridspec
 
-plotRequestNums = []
+kePlotRequestNums = []
+ntpPlotRequestNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
@@ -23,6 +24,12 @@ def cullOutliers(data):
             newData.append(point)
 
     return newData
+
+def relevantPlotNums(filename):
+    if "ke" in filename:
+        return kePlotRequestNums
+    else:
+        return ntpPlotRequestNums
 
 def relevantRequestNums(filename):
     if "ke" in filename:
@@ -67,7 +74,7 @@ def addRequestNums(filename):
                 continue;
             
             if curLineNum in relevantRequestNums(filename):
-                delimeter = str(plotRequestNums[index]) + " total request(s) per second\n"
+                delimeter = str(relevantPlotNums(filename)[index]) + " total request(s) per second\n"
                 file.write(delimeter)
                 curLineNum += 1
                 index += 1
@@ -80,7 +87,7 @@ def adjustMeasurement(l, scale):
     scalar = 1.0
     if scale == "ms":
         scalar = 1000000.0
-    elif scale == "us":
+    elif scale == r"$\mu$s":
         scalar = 1000.0
     
     for i, val in enumerate(l):
@@ -94,11 +101,11 @@ def adjustMeasurements(lists, scale):
 def inPlotWindow(numRequests):
     return numRequests > minObsRequests and numRequests <= maxObsRequests
 
-def addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, shouldMeasure):
+def addRequestNum(numRequests, lineNum, relevantRequestNums, filename, shouldMeasure):
     if inPlotWindow(numRequests):
         if not shouldMeasure:
             return
-        plotRequestNums.append(numRequests)
+        relevantPlotNums(filename).append(numRequests)
         relevantRequestNums(filename).append(lineNum)
 
 def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements):
@@ -133,7 +140,6 @@ def plot(filename, plotname, scale):
     seventyfifthMeasurements = []
     ninetiethMeasurements = []
     maxMeasurements = []
-    plotRequestNums.clear()
 
     actual = []
     desired = []
@@ -153,8 +159,8 @@ def plot(filename, plotname, scale):
 
         if "TRUE" in line:
             trueReqs = float(line.replace("TRUE REQS PER SECOND ", "").replace("\n", ""))
-            # print("Desired: " + str(plotRequestNums[-1]) + " | Obtained: " + trueReqs)
-            # desired.append(plotRequestNums[-1])
+            # print("Desired: " + str(relevantPlotNums(filename)[-1]) + " | Obtained: " + trueReqs)
+            # desired.append(relevantPlotNums(filename)[-1])
             actual.append(trueReqs)
             continue
 
@@ -168,7 +174,7 @@ def plot(filename, plotname, scale):
             if numRequests == 0:
                 # no number of requests seen, set it and move on
                 numRequests = int(line.replace(" total request(s) per second\n", ""))
-                addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, True)
+                addRequestNum(numRequests, lineNum, relevantRequestNums, filename, True)
                 continue
 
             # this line contatins the number of requests for the following measurements 
@@ -181,7 +187,7 @@ def plot(filename, plotname, scale):
             tmpPrevNum = numRequests
 
             numRequests = int(line.replace(" total request(s) per second\n", ""))
-            addRequestNum(numRequests, lineNum, plotRequestNums, relevantRequestNums, filename, len(measurements) != 0)
+            addRequestNum(numRequests, lineNum, relevantRequestNums, filename, len(measurements) != 0)
 
             # clear the measurements
             measurements = []
@@ -203,21 +209,21 @@ def plot(filename, plotname, scale):
 
     
 
-    # plt.plot(plotRequestNums, ninetiethMeasurements, 'r',  label="95th Percentile")
-    # plt.plot(plotRequestNums, seventyfifthMeasurements, label="75th Percentile")
-    # plt.plot(plotRequestNums, medianMeasurements, 'g', label="Median")
-    # plt.plot(plotRequestNums, twentyfifthMeasurements, label="25th Percentile")
-    # plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
+    # plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
+    # plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
+    # plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median")
+    # plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
+    # plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")
     
 
-    plt.plot(plotRequestNums, minMeasurements, 'b', label="Min")
-    plt.plot(plotRequestNums, twentyfifthMeasurements, label="25th Percentile")
-    plt.plot(plotRequestNums, medianMeasurements, 'g', label="Median")
-    plt.plot(plotRequestNums, seventyfifthMeasurements, label="75th Percentile")
-    plt.plot(plotRequestNums, ninetiethMeasurements, 'r',  label="95th Percentile")
+    plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")
+    plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
+    plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median")
+    plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
+    plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
 
-    plt.plot(plotRequestNums, meanMeasurements, 'm', label="Mean")
-    # plt.plot(plotRequestNums, maxMeasurements, 'r', label="Max")
+    plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
+    # plt.plot(relevantPlotNums(filename), maxMeasurements, 'r', label="Max")
 
     plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
@@ -235,15 +241,11 @@ def plot(filename, plotname, scale):
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
     # plt.figure()
-    # print(plotRequestNums)
-    print("Errors: " + str(errorCounts))
-    # plt.plot(plotRequestNums, errorCounts)
+    # print(relevantPlotNums(filename))
+    # print("Errors: " + str(errorCounts))
+    # plt.plot(relevantPlotNums(filename), errorCounts)
     # plt.savefig(figurePath + "Error Rate" + ".pdf", bbox_inches='tight', pad_inches = 0)
 
-
-
-def plotServer(filename, plotname, scale):
-    return
 
 # Make Pseudo Distribution
 def plotPseudoCDF(obsNum, filename, plotname, scale):
@@ -259,6 +261,9 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
         if line.strip() == "":
                 continue
 
+        if "Error" in line:
+            continue
+
         if "request(s)" in line:
             numRequests = int(line.replace(" total request(s) per second\n", ""))
             if numRequests == obsNum:
@@ -271,7 +276,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     adjustMeasurement(data, scale)
 
-    data.sort()
+    # data.sort()
 
     plt.figure()
     # plt.yscale("log")
@@ -284,7 +289,8 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
     plt.margins(0, 0)
-    plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
+    # plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
+    plt.show()
 
 
 def plotCDFs(filenames, plotnames, figurename, scale):
@@ -424,10 +430,10 @@ serverNTS = resultPath + 'server_nts_auth'
 if "single-client" in resultPath:
 
     # plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
-    plotCDFs([clientNTP, clientKE], ["$d_{CNTP}$ CDF", "$d_{KE}$ CDF"], "Client CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["$d_{CNTP}$", "$d_{KE}$"], "Client CDFs", "ms")
     # plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
     # plotCDFs([serverNTP, serverNTS, serverKE], ["Server NTP CDF", "Server NTS CDF", "Server KE CDF"], "Server CDFs", "us")
-    plotCDFs([serverNTP, serverKE, serverNTS], ["$d_{SNTP}$ CDF", "$d_{SKE}$ CDF", "$d_{SNTS}$ CDF"], "Server CDFs", "us")
+    plotCDFs([serverNTP, serverKE, serverNTS], ["$d_{SNTP}$", "$d_{SKE}$", "$d_{SNTS}$"], "Server CDFs", r"$\mu$s")
     # plotPseudoCDF(1, clientKE, "Client KE Pseudo CDF", "ms")
     
 
@@ -446,7 +452,7 @@ plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
 print("Client plots complete")
 
-print(len(plotRequestNums))
+print(len(relevantPlotNums(filename)))
 print(len(clientKELineNums))
 print(len(clientNTPLineNums))
 
@@ -460,12 +466,13 @@ plot(serverKE, "Server NTS Key Creation", "us")
 plot(serverNTP, "Server NTP Header Creation", "ns")
 plot(serverNTS, "Server NTS Packet Creation", "us")
 
-print("Server plots complete")
+# print("Server plots complete")
 
 numReq = 200
 # plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
 
-# plotPseudoCDF(200, clientNTP, "Request 200 NTP CDF", "ms")
+plotPseudoCDF(500, serverKE, "500 Pseudo CDF", r"$\mu$s")
+plotPseudoCDF(2000, serverKE, "2k Pseudo CDF", r"$\mu$s")
 # plotPseudoCDF(400, clientNTP, "Request 400 NTP CDF", "ms")
 
 print("\"CDF\" plots complete")

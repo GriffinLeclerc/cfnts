@@ -1,6 +1,6 @@
-aux_clients=("23" "98" "27" "77" "72" "93" "97" "74" "96" "21" "83")
+aux_clients=("23" "98" "27" "77" "72" "93" "97" "74" "96" "21" "83" "26" "90" "85" "24")
 
-aux_count=11
+aux_count=15
 
 # start the aux clients
 for i in $(seq 1 $aux_count)
