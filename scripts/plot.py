@@ -61,7 +61,6 @@ def addRequestNums(filename):
         doc = yaml.safe_load(config)
 
         warmupRuns = int(doc['warmup_runs'])
-        print(warmupRuns)
         index = 0
 
         # for curLineNum, line in enumerate(lines):
@@ -133,6 +132,10 @@ def plot(filename, plotname, scale):
     numRequests = 0
     measurements = []
 
+    # clear the x axis values from previous plots
+    # the code reconstructs them from this specific file later
+    relevantPlotNums(filename).clear()
+
     meanMeasurements = []
     minMeasurements = []
     twentyfifthMeasurements = []
@@ -167,7 +170,8 @@ def plot(filename, plotname, scale):
         if "Errors" in line:
             # if tmpPrevNum + 10 != numRequests:
             #     print(numRequests)
-            errorCounts.append(int(line.replace("Errors: ", "")))
+            count = int(line.replace("Errors: ", ""))
+            errorCounts.append((count / len(measurements)) * 100)
             continue
 
         if "request(s)" in line:
@@ -184,8 +188,6 @@ def plot(filename, plotname, scale):
             # print("Add data for previous number of requests: " + str(len(measurements)))
             addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
 
-            tmpPrevNum = numRequests
-
             numRequests = int(line.replace(" total request(s) per second\n", ""))
             addRequestNum(numRequests, lineNum, relevantRequestNums, filename, len(measurements) != 0)
 
@@ -200,30 +202,29 @@ def plot(filename, plotname, scale):
     # if the server failed, add 0 RTTs to cause alarm
 
     plt.figure()
-    plt.gcf().set_size_inches(20, 10)
+    plt.gcf().set_size_inches(20, 6)
     
     # add the last set of measurements
     addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
 
     adjustMeasurements([meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements], scale)
 
-    
-
     # plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
     # plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
     # plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median")
     # plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
-    # plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")
-    
+    # plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")  
 
     plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")
-    plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
+    # plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
     plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median")
-    plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
-    plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
+    # plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
+    # plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
 
-    plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
+    # plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
     # plt.plot(relevantPlotNums(filename), maxMeasurements, 'r', label="Max")
+
+    plt.ylim((0, max(medianMeasurements)))
 
     plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
@@ -240,11 +241,11 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
-    # plt.figure()
+    plt.figure()
     # print(relevantPlotNums(filename))
-    # print("Errors: " + str(errorCounts))
-    # plt.plot(relevantPlotNums(filename), errorCounts)
-    # plt.savefig(figurePath + "Error Rate" + ".pdf", bbox_inches='tight', pad_inches = 0)
+    print("Errors Ratios: " + str(errorCounts))
+    plt.plot(list(range(0, len(errorCounts))), errorCounts)
+    plt.savefig(figurePath + "Error Rate " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
 # Make Pseudo Distribution
@@ -289,8 +290,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     plt.scatter(list(range(0, len(data))), data, s=0.5)
     plt.margins(0, 0)
-    # plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
-    plt.show()
+    plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
 def plotCDFs(filenames, plotnames, figurename, scale):
@@ -400,8 +400,6 @@ def plotCDFs(filenames, plotnames, figurename, scale):
     plt.rcParams.update({'font.size': 12})
     plt.savefig(figurePath + figurename + ".pdf", bbox_inches='tight', pad_inches = 0)
 
-    plt.show()
-
 
 
 # ----------------- Figure generation ----------------------
@@ -411,7 +409,7 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/! Load Results/"
+resultPath = "results/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -452,19 +450,15 @@ plot(clientNTP, "Client NTS NTP Total Time", "ms")
 
 print("Client plots complete")
 
-print(len(relevantPlotNums(filename)))
-print(len(clientKELineNums))
-print(len(clientNTPLineNums))
-
 addRequestNums(serverKE)
 addRequestNums(serverNTP)
 addRequestNums(serverNTS)
 
 print("Client numbers added to server files complete")
 
-plot(serverKE, "Server NTS Key Creation", "us")
-plot(serverNTP, "Server NTP Header Creation", "ns")
-plot(serverNTS, "Server NTS Packet Creation", "us")
+plot(serverKE, "Server NTS Key Creation", r"$\mu$s")
+plot(serverNTP, "Server NTP Header Creation", r"$\mu$s")
+plot(serverNTS, "Server NTS Packet Creation", r"$\mu$s")
 
 # print("Server plots complete")
 

@@ -39,7 +39,13 @@ use threadpool::ThreadPool;
 pub static TRUE_KE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 pub static TRUE_NTP: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 
-pub static NUM_FAILURES: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static KE_TIMEOUT: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static KE_OS_FAILURE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static KE_OTHER: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+
+pub static NTP_TIMEOUT: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static NTP_OS_FAILURE: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
+pub static NTP_OTHER: std::sync::atomic::AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug)]
 pub struct ClientConfig {
@@ -232,7 +238,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         match res {
             Err(err) => {
                 // eprintln!("failure of tls stage: {}", err);
-                NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
                 return;
             }
             Ok(_) => {}
@@ -243,7 +248,6 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         match res {
             Err(err) => {
                 // eprintln!("failure of client: {}", err);
-                NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
             }
             Ok(_result) => {
                 // println!("stratum: {:}", _result.stratum);
@@ -285,7 +289,15 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 match ke_res {
                     Err(err) => {
                         // eprintln!("failure of tls stage: {}", err);
-                        NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                        if err.to_string().contains("timeout") {
+                            KE_TIMEOUT.fetch_add(1, Ordering::SeqCst);
+                        }
+                        else if err.to_string().contains("os") {
+                            KE_OS_FAILURE.fetch_add(1, Ordering::SeqCst);
+                        }
+                        else {
+                            KE_OTHER.fetch_add(1, Ordering::SeqCst);
+                        }
                         return;
                     }
                     Ok(_) => {}
@@ -318,7 +330,15 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     match res {
                         Err(err) => {
                             // eprintln!("failure of client: {}", err);
-                            NUM_FAILURES.fetch_add(1, Ordering::SeqCst);
+                            if err.to_string().contains("timeout") {
+                                NTP_TIMEOUT.fetch_add(1, Ordering::SeqCst);
+                            }
+                            else if err.to_string().contains("os") {
+                                NTP_OS_FAILURE.fetch_add(1, Ordering::SeqCst);
+                            }
+                            else {
+                                NTP_OTHER.fetch_add(1, Ordering::SeqCst);
+                            }
                         }
                         Ok(_) => {
                             // no output, assume proper
@@ -344,9 +364,14 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
         // let true_ntp_per_second = (TRUE_NTP.load(Ordering::SeqCst) as f64) / true_diff;
         // CLIENT_NTP_S.get().clone().unwrap().send(format!("TRUE REQS PER SECOND {}", true_ntp_per_second)).expect("unable to write to channel.");
 
-        // // write the number of failures
-        CLIENT_KE_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
-        CLIENT_NTP_S.get().clone().unwrap().send(format!("Errors: {}", NUM_FAILURES.load(Ordering::SeqCst))).expect("unable to write to channel.");
+        // write the number of failures
+        CLIENT_KE_S.get().clone().unwrap().send(format!("Timeout Errors: {}", KE_TIMEOUT.load(Ordering::SeqCst))).expect("unable to write to channel.");
+        CLIENT_KE_S.get().clone().unwrap().send(format!("OS Errors: {}", KE_OS_FAILURE.load(Ordering::SeqCst))).expect("unable to write to channel.");
+        CLIENT_KE_S.get().clone().unwrap().send(format!("Other Errors: {}", KE_OTHER.load(Ordering::SeqCst))).expect("unable to write to channel.");
+
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("Timeout Errors: {}", NTP_TIMEOUT.load(Ordering::SeqCst))).expect("unable to write to channel.");
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("OS Errors: {}", NTP_OS_FAILURE.load(Ordering::SeqCst))).expect("unable to write to channel.");
+        CLIENT_NTP_S.get().clone().unwrap().send(format!("Other Errors: {}", NTP_OTHER.load(Ordering::SeqCst))).expect("unable to write to channel.");
     }
 
     // step
