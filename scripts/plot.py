@@ -1,4 +1,5 @@
 import binascii
+from cProfile import label
 from readline import parse_and_bind
 import statistics as stats
 import matplotlib.pyplot as plt
@@ -147,7 +148,9 @@ def plot(filename, plotname, scale):
     actual = []
     desired = []
 
-    errorCounts = []
+    timeoutCounts = []
+    osCounts = []
+    otherCounts = []
 
     tmpPrevNum = 0
 
@@ -167,11 +170,23 @@ def plot(filename, plotname, scale):
             actual.append(trueReqs)
             continue
 
-        if "Errors" in line:
-            # if tmpPrevNum + 10 != numRequests:
-            #     print(numRequests)
-            count = int(line.replace("Errors: ", ""))
-            errorCounts.append((count / len(measurements)) * 100)
+        # Timeout Errors: 0
+        # OS Errors: 0
+        # Other Errors: 0
+
+        if "Timeout" in line:
+            count = int(line.replace("Timeout Errors: ", ""))
+            timeoutCounts.append((count / len(measurements)) * 100)
+            continue
+
+        if "OS" in line:
+            count = int(line.replace("OS Errors: ", ""))
+            osCounts.append((count / len(measurements)) * 100)
+            continue
+
+        if "Other" in line:
+            count = int(line.replace("Other Errors: ", ""))
+            otherCounts.append((count / len(measurements)) * 100)
             continue
 
         if "request(s)" in line:
@@ -242,10 +257,11 @@ def plot(filename, plotname, scale):
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
     plt.figure()
-    # print(relevantPlotNums(filename))
-    print("Errors Ratios: " + str(errorCounts))
-    plt.plot(list(range(0, len(errorCounts))), errorCounts)
-    plt.savefig(figurePath + "Error Rate " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
+    plt.plot(list(range(0, len(timeoutCounts))), timeoutCounts, label="Timeouts")
+    plt.plot(list(range(0, len(osCounts))), osCounts, label="OS errors")
+    plt.plot(list(range(0, len(otherCounts))), otherCounts, label="Other errors")
+    plt.legend()
+    plt.savefig(figurePath + "Error Rates " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
 # Make Pseudo Distribution

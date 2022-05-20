@@ -37,6 +37,7 @@ use std::process;
 
 pub static CLIENT_KE_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 pub static CLIENT_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
+pub static CLIENT_ERR_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 
 pub static SERVER_KE_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
 pub static SERVER_NTP_S: OnceCell<crossbeam_channel::Sender<String>> = OnceCell::new();
@@ -190,6 +191,26 @@ fn main() {
             loop {
                 // get and write measurements
                 let value = client_ntp_r.recv().unwrap();
+                writeln!(f, "{}", value).expect("Unable to write file");
+            }
+        });
+
+        // Client errors
+        // create the channel
+        let (client_err_s, client_err_r) = unbounded();
+        // populate the once cell
+        CLIENT_ERR_S.set(client_err_s).expect("unable to fill once cell.");
+        // make a thread for writing client_ke meas
+        thread::spawn(move || {
+            let mut f = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("results/client_err")
+            .expect("Unable to create file");
+
+            loop {
+                // get and write measurements
+                let value = client_err_r.recv().unwrap();
                 writeln!(f, "{}", value).expect("Unable to write file");
             }
         });

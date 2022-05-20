@@ -25,6 +25,7 @@ use std::thread;
 
 use crate::CLIENT_KE_S;
 use crate::CLIENT_NTP_S;
+use crate::CLIENT_ERR_S;
 
 use std::sync::{Arc, Barrier};
 use std::convert::TryInto;
@@ -298,6 +299,8 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                         else {
                             KE_OTHER.fetch_add(1, Ordering::SeqCst);
                         }
+                        
+                        CLIENT_ERR_S.get().clone().unwrap().send(format!("KE: {}", err.to_string())).expect("unable to write to channel.");
                         return;
                     }
                     Ok(_) => {}
@@ -339,6 +342,9 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                             else {
                                 NTP_OTHER.fetch_add(1, Ordering::SeqCst);
                             }
+
+                            CLIENT_ERR_S.get().clone().unwrap().send(format!("NTP: {}", err.to_string())).expect("unable to write to channel.");
+                            return;
                         }
                         Ok(_) => {
                             // no output, assume proper
