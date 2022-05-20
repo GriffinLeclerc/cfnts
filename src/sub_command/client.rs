@@ -290,7 +290,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                 match ke_res {
                     Err(err) => {
                         // eprintln!("failure of tls stage: {}", err);
-                        if err.to_string().contains("timeout") {
+                        if err.to_string().contains("time") {
                             KE_TIMEOUT.fetch_add(1, Ordering::SeqCst);
                         }
                         else if err.to_string().contains("os") {
@@ -333,7 +333,7 @@ pub fn run<'a>(matches: &clap::ArgMatches<'a>) {
                     match res {
                         Err(err) => {
                             // eprintln!("failure of client: {}", err);
-                            if err.to_string().contains("timeout") {
+                            if err.to_string().contains("time") {
                                 NTP_TIMEOUT.fetch_add(1, Ordering::SeqCst);
                             }
                             else if err.to_string().contains("os") {
