@@ -214,11 +214,6 @@ def plot(filename, plotname, scale):
 
     file1.close()
 
-    # if the server failed, add 0 RTTs to cause alarm
-
-    plt.figure()
-    plt.gcf().set_size_inches(20, 6)
-    
     # add the last set of measurements
     addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, twentyfifthMeasurements, medianMeasurements, seventyfifthMeasurements, ninetiethMeasurements, maxMeasurements)
 
@@ -230,24 +225,68 @@ def plot(filename, plotname, scale):
     # plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
     # plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")  
 
-    plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min")
-    # plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile")
-    plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median")
-    # plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile")
-    # plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile")
+    scalar = 0.6
 
-    # plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
-    # plt.plot(relevantPlotNums(filename), maxMeasurements, 'r', label="Max")
+    width = 12.8 * scalar
+    height = 4.8 * scalar
+    plt.rcParams.update({'font.size': 12 * scalar})
+    custom_width = 1.0 * scalar
 
-    plt.ylim((0, max(medianMeasurements)))
+    plt.figure()
+    plt.gcf().set_size_inches(width, height)
+
+    plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min", linewidth=custom_width)
+    plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median", linewidth=custom_width)
+
+    if "client" in filename:
+        plt.ylim(0, max(medianMeasurements))
+    else:
+        plt.ylim((min(minMeasurements) - (0.03 * min(minMeasurements)), max(medianMeasurements) + (0.03 * min(minMeasurements))))
+
+    # locs, labels = plt.yticks()
+    # locs = np.append(locs, min(minMeasurements))
+    # plt.yticks(locs)
 
     plt.xlabel("Number of Requests Per Second")
     plt.ylabel("Total Operational Time (" + scale + ")")
     plt.legend(loc="upper left")
+    plt.grid(True)
 
-    plt.margins(0, 0)
+    plt.margins(0, 0.01)
     # plt.yscale('log')
-    plt.savefig(figurePath + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
+    plt.savefig(figurePath + plotname + "-min+median" + ".pdf", bbox_inches='tight', pad_inches = 0)
+
+
+    # All measurements
+
+    plt.figure()
+    plt.gcf().set_size_inches(width, height)
+
+    plt.plot(relevantPlotNums(filename), minMeasurements, 'b', label="Min", linewidth=custom_width)
+    plt.plot(relevantPlotNums(filename), twentyfifthMeasurements, label="25th Percentile", linewidth=custom_width)
+    plt.plot(relevantPlotNums(filename), medianMeasurements, 'g', label="Median", linewidth=custom_width)
+    plt.plot(relevantPlotNums(filename), seventyfifthMeasurements, label="75th Percentile", linewidth=custom_width)
+    plt.plot(relevantPlotNums(filename), ninetiethMeasurements, 'r',  label="95th Percentile", linewidth=custom_width)
+
+    # print(stats.mean(minMeasurements))
+    # print(stats.mean(twentyfifthMeasurements))
+    # print(stats.mean(medianMeasurements))
+    # print(stats.mean(seventyfifthMeasurements))
+    print(stats.mean(ninetiethMeasurements[20:]))
+    print(stats.mean(medianMeasurements[20:]))
+
+    # plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
+    # plt.plot(relevantPlotNums(filename), maxMeasurements, 'r', label="Max")
+
+    plt.xlabel("Number of Requests Per Second")
+    plt.ylabel("Total Operational Time (" + scale + ")")
+    plt.legend(loc="upper left")
+    plt.grid(True)
+
+    plt.margins(0, 0.01)
+    # plt.yscale('log')
+    plt.savefig(figurePath + plotname + "-all" + ".pdf", bbox_inches='tight', pad_inches = 0)
+
 
     # Reqs per second sanity check
     plt.figure()
@@ -256,10 +295,33 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
+    # Error counts
     plt.figure()
-    plt.plot(list(range(0, len(timeoutCounts))), timeoutCounts, label="Timeouts")
-    plt.plot(list(range(0, len(osCounts))), osCounts, label="OS errors")
-    plt.plot(list(range(0, len(otherCounts))), otherCounts, label="Other errors")
+    plt.gcf().set_size_inches(width, height)
+    plt.margins(0, 0.01)
+    plt.grid(True)
+
+    xAxisVals = list(range(0, len(timeoutCounts)))
+    print(xAxisVals)
+    xAxisVals = list(map(lambda val: (val * 100) + 100, xAxisVals))
+    print(xAxisVals)
+    plt.xlabel("Number of Requests Per Second")
+    plt.ylabel("Percentage of requests that resulted in error")
+    plt.plot(xAxisVals, timeoutCounts, label="Timeout")
+
+    xAxisVals = list(range(0, len(osCounts)))
+    print(xAxisVals)
+    xAxisVals = list(map(lambda val: (val * 100) + 100, xAxisVals))
+    print(xAxisVals)
+    plt.plot(xAxisVals, osCounts, label="OS Error 11")
+
+    locs, labels = plt.yticks()
+    locs = locs[1:]
+    locs = locs[:-1]
+    labels = list(map(lambda x: str(x) + "%", locs))
+    plt.yticks(locs, labels)
+
+    # plt.plot(xAxis, otherCounts, label="% Other errors")
     plt.legend()
     plt.savefig(figurePath + "Error Rates " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
@@ -334,6 +396,8 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
         adjustMeasurement(data, scale)
 
+        print(plotnames[i] + " " + str(stats.median(data)))
+
         n_bins = 50
         
         count, bins_count = np.histogram(data, n_bins)
@@ -406,13 +470,23 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
         curSubplot.grid(True)
         # curSubplot.title.set_text(curPlotName)
-        curSubplot.xlabel("Total Operational Time (" + scale + ")")
-        curSubplot.ylabel('Likelihood of occurrence')
+        curSubplot.xlabel("Time (" + scale + ")")
+        # curSubplot.ylabel('Likelihood of occurrence')
 
     
+    locs, labels = plt.yticks()
+    locs = locs[1:]
+    locs = locs[:-1]
+    # print(locs)
+    labels = list(map(lambda x:str( int(float(x) * 100) ) + "%", locs))
+    plt.yticks(locs, labels)
+
        
     # plt.margins(0, 0)
+
+
     plt.legend(loc="lower right")
+    plt.gcf().set_size_inches(6.4, 4.8)
     plt.rcParams.update({'font.size': 12})
     plt.savefig(figurePath + figurename + ".pdf", bbox_inches='tight', pad_inches = 0)
 
@@ -426,6 +500,7 @@ maxObsRequests = 100000000
 # maxObsRequests = 7000
 
 resultPath = "results/"
+# resultPath = "results/single-client/"
 figurePath = resultPath.replace("results/", "figures/")
 # figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
@@ -444,7 +519,7 @@ serverNTS = resultPath + 'server_nts_auth'
 if "single-client" in resultPath:
 
     # plotCDFs([clientKE, clientNTP], ["Client KE CDF", "Client NTS CDF"], "Client CDFs", "ms")
-    plotCDFs([clientNTP, clientKE], ["$d_{CNTP}$", "$d_{KE}$"], "Client CDFs", "ms")
+    plotCDFs([clientNTP, clientKE], ["$d_{CNTS}$", "$d_{CKE}$"], "Client CDFs", "ms")
     # plotCDFs([clientNTP], ["Client NTP CDF"], "Client NTP CDF", "ms")
     # plotCDFs([serverNTP, serverNTS, serverKE], ["Server NTP CDF", "Server NTS CDF", "Server KE CDF"], "Server CDFs", "us")
     plotCDFs([serverNTP, serverKE, serverNTS], ["$d_{SNTP}$", "$d_{SKE}$", "$d_{SNTS}$"], "Server CDFs", r"$\mu$s")
@@ -481,8 +556,8 @@ plot(serverNTS, "Server NTS Packet Creation", r"$\mu$s")
 numReq = 200
 # plotPseudoCDF(numReq, serverNTP, "Request " + str(numReq) + " Server NTP CDF", "us")
 
-plotPseudoCDF(500, serverKE, "500 Pseudo CDF", r"$\mu$s")
-plotPseudoCDF(2000, serverKE, "2k Pseudo CDF", r"$\mu$s")
+# plotPseudoCDF(500, serverKE, "500 Pseudo CDF", r"$\mu$s")
+# plotPseudoCDF(2000, serverKE, "2k Pseudo CDF", r"$\mu$s")
 # plotPseudoCDF(400, clientNTP, "Request 400 NTP CDF", "ms")
 
 print("\"CDF\" plots complete")
