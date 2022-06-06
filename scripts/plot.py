@@ -13,6 +13,9 @@ ntpPlotRequestNums = []
 clientKELineNums = []
 clientNTPLineNums = []
 
+plt.rcParams['axes.axisbelow'] = True
+plt.rcParams['pdf.fonttype'] = 42
+
 def mapInt(num):
     return int(num)
 
@@ -125,7 +128,7 @@ def addDataPoint(numRequests, measurements, meanMeasurements, minMeasurements, t
 
 # Plot the data
 def plot(filename, plotname, scale):
-    print(filename)
+    print("Plotting: " + filename)
 
     file1 = open(filename, 'r')
     data = file1.readlines()
@@ -232,6 +235,9 @@ def plot(filename, plotname, scale):
     plt.rcParams.update({'font.size': 12 * scalar})
     custom_width = 1.0 * scalar
 
+    if "server" in filename or "ntp" in filename:
+        height = height * 0.5
+
     plt.figure()
     plt.gcf().set_size_inches(width, height)
 
@@ -248,13 +254,14 @@ def plot(filename, plotname, scale):
     # plt.yticks(locs)
 
     plt.xlabel("Number of Requests Per Second")
-    plt.ylabel("Total Operational Time (" + scale + ")")
+    plt.ylabel("Time (" + scale + ")")
     plt.legend(loc="upper left")
     plt.grid(True)
 
     plt.margins(0, 0.01)
     # plt.yscale('log')
-    plt.savefig(figurePath + plotname + "-min+median" + ".pdf", bbox_inches='tight', pad_inches = 0)
+    if "client" in filename:
+        plt.savefig(figurePath + plotname + "-min+median" + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
     # All measurements
@@ -272,14 +279,16 @@ def plot(filename, plotname, scale):
     # print(stats.mean(twentyfifthMeasurements))
     # print(stats.mean(medianMeasurements))
     # print(stats.mean(seventyfifthMeasurements))
-    print(stats.mean(ninetiethMeasurements[20:]))
-    print(stats.mean(medianMeasurements[20:]))
+
+    # Measurements after the rtt increase
+    # print(stats.mean(ninetiethMeasurements[20:]))
+    # print(stats.mean(medianMeasurements[20:]))
 
     # plt.plot(relevantPlotNums(filename), meanMeasurements, 'm', label="Mean")
     # plt.plot(relevantPlotNums(filename), maxMeasurements, 'r', label="Max")
 
     plt.xlabel("Number of Requests Per Second")
-    plt.ylabel("Total Operational Time (" + scale + ")")
+    plt.ylabel("Time (" + scale + ")")
     plt.legend(loc="upper left")
     plt.grid(True)
 
@@ -295,35 +304,29 @@ def plot(filename, plotname, scale):
     plt.legend(loc="upper left")
     # plt.savefig(filename.replace("results/", "figures/") + " Num Measurements Comparison" + ".pdf")
 
-    # Error counts
-    plt.figure()
-    plt.gcf().set_size_inches(width, height)
-    plt.margins(0, 0.01)
-    plt.grid(True)
+    if "client" in filename:
+        # Error counts
+        plt.figure()
+        plt.gcf().set_size_inches(width, height)
+        plt.rcParams.update({'font.size': 12 * scalar})
+        plt.margins(0, 0.01)
+        plt.grid(True)
 
-    xAxisVals = list(range(0, len(timeoutCounts)))
-    print(xAxisVals)
-    xAxisVals = list(map(lambda val: (val * 100) + 100, xAxisVals))
-    print(xAxisVals)
-    plt.xlabel("Number of Requests Per Second")
-    plt.ylabel("Percentage of requests that resulted in error")
-    plt.plot(xAxisVals, timeoutCounts, label="Timeout")
+        xAxisVals = list(range(0, len(timeoutCounts)))
+        xAxisVals = list(map(lambda val: (val * 100) + 100, xAxisVals))
+        plt.xlabel("Number of Requests Per Second")
+        plt.ylabel("Percentage of requests that resulted in error")
+        plt.stackplot(xAxisVals, timeoutCounts, osCounts, labels=["Connection timeout", "OS Error 11"], linewidth=custom_width)
 
-    xAxisVals = list(range(0, len(osCounts)))
-    print(xAxisVals)
-    xAxisVals = list(map(lambda val: (val * 100) + 100, xAxisVals))
-    print(xAxisVals)
-    plt.plot(xAxisVals, osCounts, label="OS Error 11")
+        locs, labels = plt.yticks()
+        locs = locs[1:]
+        locs = locs[:-1]
+        labels = list(map(lambda x: str(x) + "%", locs))
+        plt.yticks(locs, labels)
 
-    locs, labels = plt.yticks()
-    locs = locs[1:]
-    locs = locs[:-1]
-    labels = list(map(lambda x: str(x) + "%", locs))
-    plt.yticks(locs, labels)
-
-    # plt.plot(xAxis, otherCounts, label="% Other errors")
-    plt.legend()
-    plt.savefig(figurePath + "Error Rates " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
+        # plt.plot(xAxis, otherCounts, label="% Other errors")
+        plt.legend(loc="upper left")
+        plt.savefig(figurePath + "Error Rates " + plotname + ".pdf", bbox_inches='tight', pad_inches = 0)
 
 
 # Make Pseudo Distribution
@@ -362,7 +365,7 @@ def plotPseudoCDF(obsNum, filename, plotname, scale):
 
     plt.title(plotname)
     plt.xlabel("Individual Observation")
-    plt.ylabel("Total Operational Time (" + scale + ")")
+    plt.ylabel("Time (" + scale + ")")
 
     # data = data[:900]
 
@@ -396,7 +399,7 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
         adjustMeasurement(data, scale)
 
-        print(plotnames[i] + " " + str(stats.median(data)))
+        print(plotnames[i] + " " + str(stats.median(data)) + " " + scale)
 
         n_bins = 50
         
@@ -457,12 +460,13 @@ def plotCDFs(filenames, plotnames, figurename, scale):
 
         curSubplot.hlines(y=1, xmin = bins_count[len(bins_count) - 1], xmax = max(data) + 1000, color = colors[i], linewidth=custom_width)
 
-        # if i == 1:
-        #     # TODO Consider adding a horizontal dashed line for space between text
-        #     plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=0)
-        # else:
+        if i == 0 and "server" in filename:
+            plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale, rotation=-45, va="top")
+        else:
+            plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale, rotation=45)
+
         plt.text(bins_count[1], 0, "{:.2f}".format(min(data)) + " " + scale, rotation=45)
-        plt.text(max(data), 1, "{:.2f}".format(max(data)) + " " + scale, rotation=45)
+        
 
         # Add circles to points of interest
         plt.plot([bins_count[1]], [0], 'o', color=colors[i])
@@ -499,10 +503,13 @@ minObsRequests = 1
 maxObsRequests = 100000000
 # maxObsRequests = 7000
 
-resultPath = "results/"
+
+# Change this path to plot different results
+resultPath = "results/single-client-2/"
 # resultPath = "results/single-client/"
+
+
 figurePath = resultPath.replace("results/", "figures/")
-# figurePath = figurePath + str(minObsRequests) + "-" + str(maxObsRequests) + "/"
 
 print("reading results from " + resultPath)
 print("Writing figures to " + figurePath)

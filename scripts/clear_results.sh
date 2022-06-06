@@ -1,5 +1,6 @@
 printf "" > results/client_nts_ke
 printf "" > results/client_nts_ntp
+printf "" > results/client_err
 
 printf "" > results/server_ke_create
 printf "" > results/server_ntp_alone
