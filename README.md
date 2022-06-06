@@ -30,7 +30,7 @@ These include `clear_results.sh`, `fetch_results.sh`, `gather_measurements.sh`, 
 
 Ensure the NTS Client and Server are online and reachable by the Arbiter and execute `./scripts/orchestrate.sh` on the Arbiter to gather results.
 
-Upon completion of the experiment parameters, the NTS Arbiter will be rebooted and results are ready for collection and evaluation. Do so with `fetch_results.sh` and `plot.py`, ensuring the correct resultPath in `plot.py`
+Upon completion of the experiment parameters, the NTS Arbiter will be rebooted and results are ready for collection and evaluation. Do so with `fetch_results.sh` and `plot.py`, ensuring the correct resultPath in `plot.py`.
 
 
 
