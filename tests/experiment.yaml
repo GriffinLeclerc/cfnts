@@ -1,14 +1,26 @@
+# the number of requests conducted before measurement to warm up the connection
 warmup_runs: 10
 
+# the total number of times the experiment is run
 num_runs: 1
+# the total runtime of an individual measurement
 total_runtime_ms: 20000
+# the number of NTP exchanges per cookie received from an NTS-KE exchange
 exchanges_per_cookie: 30
 
+# The number of threads in the client's thread pool
 starting_num_clients: 1000
 
+# This is both
+# a) the starting number of requests per second
+# b) how greatly the number of requests per second increases per iteration 
 step_size: 10
 
+# The IP address of the measurement client. 
+# NOTE: Any requests received from sources that do not have this IP address will not be recorded
 meas_client_ip: 132.177.116.19
 
+# Whether or not this is an auxillary client
 is_aux_client: true
+# The number of requests per second issued from auxillary clients
 aux_req_rate: 500
