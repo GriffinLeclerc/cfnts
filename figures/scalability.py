@@ -5,59 +5,7 @@ figurePath = "Presentation Images/"
 
 x_positions = ["Measurement Client", "AUX Client"]
 
-measHeights = [100, 300, 500]
-width = 0.8
 
-colors = ['steelblue', 'orange']
-
-plt.gcf().set_size_inches(1, 0.5)
-plt.rcParams.update({'font.size': 15})
-plt.figure()
-
-plt.bar([1, 2], [100, 0], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "First Step.png", bbox_inches='tight')
-plt.figure()
-
-plt.bar([1, 2], [200, 0], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Second Step.png", bbox_inches='tight')
-plt.figure()
-
-plt.bar([1, 2], [500, 0], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Fifth Step.png", bbox_inches='tight')
-plt.figure()
-
-plt.bar([1, 2], [100, 500], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Sixth Step.png", bbox_inches='tight')
-plt.figure()
-
-plt.bar([1, 2], [300, 500], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Eighth Step.png", bbox_inches='tight')
-plt.figure()
-
-plt.bar([1, 2], [500, 500], width, color=colors)
-plt.ylim(0, 500)
-plt.xticks(np.array([1, 2]), x_positions)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Tenth Step.png", bbox_inches='tight')
-plt.figure()
-
-
-plt.gcf().set_size_inches(33, 10)
 plt.rcParams.update({'font.size': 30})
 
 x_ints = []
@@ -68,18 +16,36 @@ heights = []
 colors = []
 names = []
 for i in x_ints:
-    heights.append(500)
+    heights.append(0)
     colors.append("orange")
     names.append("AUX Client " + str(i))
 colors[0] = 'steelblue'
 names[0] = "Measurement Client"
 
-print(names)
 
-plt.bar(x_ints, heights, width, color=colors)
-plt.ylim(0, 500)
-# plt.xticks(np.array(list(map(lambda x: x-.5, x_ints))), names, rotation = -90)
-plt.xticks(np.array(x_ints), names, rotation = 90)
-plt.ylabel("Requests Per Second")
-plt.savefig(figurePath + "Final Step.png", bbox_inches='tight', pad_inches = 0.1)
-plt.figure()
+def makeFigure(title, fnHeights):
+    plt.figure()
+    plt.gcf().set_size_inches(33, 10)
+    plt.bar(x_ints, fnHeights, 0.8, color=colors)
+    plt.ylim(0, 500)
+    # plt.xticks(np.array(list(map(lambda x: x-.5, x_ints))), names, rotation = -90)
+    plt.xticks(np.array(x_ints), names, rotation = 90)
+    plt.ylabel("Requests Per Second")
+    plt.title("Global RPS: " + str(sum(fnHeights)))
+    print("Global RPS: " + str(sum(fnHeights)))
+    plt.savefig(figurePath + title + ".png", bbox_inches='tight', pad_inches = 0.1)
+    plt.close()
+
+
+measHeights = [100, 200, 300, 400, 500]
+nextAuxIndex = 1
+for i in range(0, len(x_ints) * 5 + 1):
+    makeFigure("Step " + str(i), heights)
+    if(heights[len(heights) - 1] == 500 & heights[0] >= 400):
+        heights[0] = 500
+    elif heights[0] == 500:
+            heights[0] = 100
+            heights[nextAuxIndex] = 500
+            nextAuxIndex += 1
+    else:
+        heights[0] += 100
