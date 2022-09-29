@@ -1,5 +1,7 @@
+use aes_siv::aead::generic_array::GenericArray;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use miscreant::aead::Aead;
+//use miscreant::aead::Aead;
+use aes_siv::aead::{Aead, AeadMut};
 use rand::Rng;
 
 use std::io::{Cursor, Error, ErrorKind, Read, Write};
@@ -372,7 +374,10 @@ fn parse_decrypt_auth_ext<T: Aead>(
     }
     let nonce = &auth_ext_contents[4..(4 + nonce_len)];
     let ciphertext = &auth_ext_contents[(4 + nonce_pad_len)..(4 + nonce_pad_len + cipher_len)];
-    let res = decryptor.open(nonce, auth_dat, ciphertext);
+    let mut joined = Vec::new();
+    joined.write_all(auth_dat);
+    joined.write_all(ciphertext);
+    let res = decryptor.decrypt(GenericArray::from_slice(nonce), joined.as_slice());
     if let Err(_) = res {
         return Err(Error::new(ErrorKind::InvalidInput, "authentication failed"));
     }
@@ -381,15 +386,16 @@ fn parse_decrypt_auth_ext<T: Aead>(
 
 /// serialize_nts_packet serializes the packet and does all the encryption
 pub fn serialize_nts_packet<T: Aead>(packet: NtsPacket, encryptor: &mut T) -> Vec<u8> {
-    let mut buff = Cursor::new(Vec::new());
+    let mut buff = Vec::new();
     buff.write_all(&serialize_header(packet.header))
         .expect("Nts header could not be written, failed to serialize NtsPacket");
     buff.write_all(&serialize_extensions(packet.auth_exts))
         .expect("Nts extensions could not be written, failed to serialize NtsPacket");
     let plaintext = serialize_extensions(packet.auth_enc_exts);
+    buff.write_all(plaintext.as_slice());
     let mut nonce = [0; NONCE_LEN];
     rand::thread_rng().fill(&mut nonce);
-    let ciphertext = encryptor.seal(&nonce, &buff.get_ref(), &plaintext);
+    let ciphertext = encryptor.encrypt(GenericArray::from_slice(&nonce), buff.as_slice()).unwrap();
 
     let mut authent_buffer = Cursor::new(Vec::new());
     authent_buffer.write_u16::<BigEndian>(NONCE_LEN as u16)
@@ -413,7 +419,7 @@ pub fn serialize_nts_packet<T: Aead>(packet: NtsPacket, encryptor: &mut T) -> Ve
     let res = serialize_extensions(vec![last_ext]);
     buff.write_all(&res)
         .expect("Extensions could not be written, failed to serialize NtsPacket");
-    buff.into_inner()
+    buff
 }
 
 #[cfg(test)]

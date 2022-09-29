@@ -1,7 +1,11 @@
 use crate::nts_ke::client::NtsKeResult;
 
-use miscreant::aead::Aead;
-use miscreant::aead::Aes128SivAead;
+//use miscreant::aead::Aead;
+//use miscreant::aead::Aes128SivAead;
+use aes_siv::aead::Aead;
+use aes_siv::aead::NewAead;
+use aes_siv::Aes128SivAead;
+use aes_siv::aead::generic_array::GenericArray;
 use rand::Rng;
 use slog::{debug};
 use std::error::Error;
@@ -109,8 +113,10 @@ pub fn run_nts_ntp_client(
     let socket = socket.unwrap();
     socket.set_read_timeout(Some(TIMEOUT))?;
     socket.set_write_timeout(Some(TIMEOUT))?;
-    let mut send_aead = Aes128SivAead::new(&state.keys.c2s);
-    let mut recv_aead = Aes128SivAead::new(&state.keys.s2c);
+    let c2s = GenericArray::from_slice(&state.keys.c2s);
+    let s2c = GenericArray::from_slice(&state.keys.s2c);
+    let mut send_aead = Aes128SivAead::new(c2s);
+    let mut recv_aead = Aes128SivAead::new(s2c);
     let header = NtpPacketHeader {
         leap_indicator: LeapState::NoLeap,
         version: 4,

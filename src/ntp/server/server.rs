@@ -4,6 +4,9 @@ use crate::cookie::{eat_cookie, get_keyid, make_cookie, NTSKeys, COOKIE_SIZE};
 use crate::key_rotator::{periodic_rotate, KeyRotator};
 use crate::metrics;
 
+use aes_siv::Aes128SivAead;
+use aes_siv::aead::NewAead;
+use aes_siv::aead::generic_array::GenericArray;
 use lazy_static::lazy_static;
 use prometheus::{opts, register_counter, register_int_counter, IntCounter};
 use slog::{error, info};
@@ -20,8 +23,8 @@ use std::vec;
 use crossbeam::sync::WaitGroup;
 use libc::{in6_pktinfo, in_pktinfo};
 /// Miscreant calls Aes128SivAead what IANA calls AEAD_AES_SIV_CMAC_256
-use miscreant::aead::Aead;
-use miscreant::aead::Aes128SivAead;
+//use miscreant::aead::Aead;
+//use miscreant::aead::Aes128SivAead;
 use nix::sys::socket::{
     recvmsg, sendmsg, setsockopt, sockopt, CmsgSpace, ControlMessage, MsgFlags,
 };
@@ -449,8 +452,10 @@ fn process_nts(
     cookie_keys: Arc<RwLock<KeyRotator>>,
     query_raw: &[u8],
 ) -> Vec<u8> {
-    let mut recv_aead = Aes128SivAead::new(&keys.c2s);
-    let mut send_aead = Aes128SivAead::new(&keys.s2c);
+    let c2s = GenericArray::from_slice(&keys.c2s);
+    let s2c = GenericArray::from_slice(&keys.s2c);
+    let mut recv_aead = Aes128SivAead::new(c2s);
+    let mut send_aead = Aes128SivAead::new(s2c);
     let query = parse_nts_packet::<Aes128SivAead>(query_raw, &mut recv_aead);
     match query {
         Ok(packet) => serialize_nts_packet(
